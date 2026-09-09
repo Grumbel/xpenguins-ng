@@ -96,49 +96,68 @@ int
 ToonDraw(Toon *t, int n)
 {
   int i;
+  Toon *base = t;
+
+  /*
+   * Overlay: assign map geometry first, then set ShapeBounding, then
+   * paint.  Changing the shape *after* XCopyArea causes newly included
+   * regions to be filled with the window background (black), wiping the
+   * coloured pixels and leaving solid black silhouettes.
+   */
+  if (toon_overlay_mode) {
+    for (i = 0; i < n; i++) {
+      if (base[i].active) {
+	ToonData *data = toon_data[base[i].genus] + base[i].type;
+	base[i].x_map = base[i].x;
+	base[i].y_map = base[i].y;
+	base[i].width_map = data->width;
+	base[i].height_map = data->height;
+	base[i].mapped = 1;
+      } else {
+	base[i].mapped = 0;
+      }
+    }
+    __ToonUpdateOverlayShape(base, n);
+  }
+
   for (i = 0; i < n; i++, t++) {
     if (t->active) {
       ToonData *data = toon_data[t->genus] + t->type;
       int width = data->width;
       int height = data->height;
       int direction = t->direction;
-      if (direction >= data->ndirections) {
+      if (direction >= (int) data->ndirections) {
 	direction = 0;
       }
 
       /*
        * Classic path: clip to the Xpm mask so we only paint opaque
        * pixels onto the root/desktop.
-       * Overlay path: paint the full frame rectangle; ShapeBounding
-       * already restricts which pixels are visible.  Using the clip
-       * mask here left the shaped (visible) body unpainted when mask
-       * polarity differed from ShapeBounding, producing solid black
-       * penguins.
+       * Overlay path: paint the full colour frame from data->pixmap
+       * (not the mask).  ShapeBounding already limits what is visible.
        */
       if (!toon_overlay_mode) {
 	XSetClipOrigin(toon_display, toon_drawGC,
-		       t->x-width*t->frame, t->y-height*direction);
+		       t->x - width * t->frame, t->y - height * direction);
 	XSetClipMask(toon_display, toon_drawGC, data->mask);
       }
       XCopyArea(toon_display, data->pixmap,
-		toon_draw_window,toon_drawGC,width*t->frame,height*direction,
-		width,height,t->x,t->y);
+		toon_draw_window, toon_drawGC,
+		width * t->frame, height * direction,
+		width, height, t->x, t->y);
       if (!toon_overlay_mode)
 	XSetClipMask(toon_display, toon_drawGC, None);
-      t->x_map = t->x;
-      t->y_map = t->y;
-      t->width_map = width;
-      t->height_map = height;
-      t->mapped = 1;
+      if (!toon_overlay_mode) {
+	t->x_map = t->x;
+	t->y_map = t->y;
+	t->width_map = width;
+	t->height_map = height;
+	t->mapped = 1;
+      }
     }
-    else {
+    else if (!toon_overlay_mode) {
       t->mapped = 0;
     }
-  }
-
-  if (toon_overlay_mode) {
-    /* Reshape so only toon pixels are visible on the compositor */
-    __ToonUpdateOverlayShape(t - n, n);
   }
 
   return 0;
@@ -165,8 +184,12 @@ ToonErase(Toon *t, int n)
       int y = t->y_map;
       int width = t->width_map;
       int height = t->height_map;
-      XClearArea(toon_display, toon_draw_window, x, y,
-		 width, height, False);
+      /* Overlay: old pixels drop out of ShapeBounding on the next
+       * ToonDraw; clearing is unnecessary and with background None
+       * would not help anyway. */
+      if (!toon_overlay_mode)
+	XClearArea(toon_display, toon_draw_window, x, y,
+		   width, height, False);
       if (toon_expose && !toon_overlay_mode) {
 	if (x < minx) {
 	  minx = x;

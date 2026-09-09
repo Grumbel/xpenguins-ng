@@ -119,7 +119,9 @@ ToonSetupDrawWindow(void)
    * compositors.  Transparency comes from XShape on the bounding
    * region (updated each frame to the toon masks).
    */
-  swa.background_pixel = BlackPixel(toon_display, screen);
+  /* None background: when ShapeBounding grows, the server must not
+   * fill newly included pixels with black (that wiped sprite colours). */
+  swa.background_pixmap = None;
   swa.border_pixel = BlackPixel(toon_display, screen);
   swa.override_redirect = True;
   swa.event_mask = toon_squish ? ButtonPressMask : 0;
@@ -136,7 +138,7 @@ ToonSetupDrawWindow(void)
                           CopyFromParent,
                           InputOutput,
                           CopyFromParent,
-                          CWBackPixel | CWBorderPixel | CWOverrideRedirect |
+                          CWBackPixmap | CWBorderPixel | CWOverrideRedirect |
                           CWEventMask | CWColormap | CWBackingStore | CWSaveUnder,
                           &swa);
   if (!overlay) {

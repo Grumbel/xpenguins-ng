@@ -59,6 +59,8 @@ tarball and applied four small patches.
 
 - [x] Fix BadMatch on XCopyArea in overlay mode (Xpm pixmaps must use
       overlay visual/colormap/depth)
+- [x] Force opaque alpha on ARGB Xpm pixmaps so compositors show toons
+- [x] Avoid _NET_WM_WINDOW_TYPE_DESKTOP (can hide under wallpaper)
 
 ### In progress / next
 

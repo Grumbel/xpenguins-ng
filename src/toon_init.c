@@ -115,8 +115,6 @@ ToonSetupDrawWindow(void)
   XSetWindowAttributes swa;
   Colormap cmap;
   Window overlay;
-  Atom opacity_atom;
-  unsigned long opacity;
 
   toon_draw_window = toon_root;
   toon_overlay_mode = 0;
@@ -176,23 +174,15 @@ ToonSetupDrawWindow(void)
     return -1;
   }
 
-  /* Hint compositors this is a desktop/background surface */
-  {
-    Atom type = XInternAtom(toon_display, "_NET_WM_WINDOW_TYPE", False);
-    Atom desktop = XInternAtom(toon_display, "_NET_WM_WINDOW_TYPE_DESKTOP", False);
-    XChangeProperty(toon_display, overlay, type, XA_ATOM, 32,
-                    PropModeReplace, (unsigned char *) &desktop, 1);
-  }
-
-  opacity_atom = XInternAtom(toon_display, "_NET_WM_WINDOW_OPACITY", False);
-  opacity = 0xffffffffUL;
-  XChangeProperty(toon_display, overlay, opacity_atom, XA_CARDINAL, 32,
-                  PropModeReplace, (unsigned char *) &opacity, 1);
+  /* Do not set _NET_WM_WINDOW_TYPE_DESKTOP: on many compositors that
+   * places the window under the wallpaper so the toons are never seen.
+   * Override-redirect + LowerWindow keeps us above the root and under
+   * normal clients. */
 
   __ToonSetClickThrough(toon_display, overlay);
 
-  XLowerWindow(toon_display, overlay);
   XMapWindow(toon_display, overlay);
+  XLowerWindow(toon_display, overlay);
   XFlush(toon_display);
 
   toon_draw_window = overlay;
@@ -427,6 +417,49 @@ ToonConfigure(unsigned long int code)
   return 0;
 }
 
+
+/* Xpm fills RGB but leaves the alpha channel as 0 on 32-bit visuals.
+ * Compositors then treat every pixel as fully transparent. Set alpha to
+ * opaque for every pixel that is solid according to the clip mask (or
+ * for the entire pixmap if there is no mask). */
+static void
+__ToonForceOpaqueAlpha(Pixmap pixmap, Pixmap mask, unsigned int width,
+                       unsigned int height, unsigned long alpha_bits)
+{
+  XImage *img;
+  XImage *msk = NULL;
+  unsigned int x, y;
+
+  if (!alpha_bits || width == 0 || height == 0)
+    return;
+
+  img = XGetImage(toon_display, pixmap, 0, 0, width, height, AllPlanes, ZPixmap);
+  if (!img)
+    return;
+
+  if (mask)
+    msk = XGetImage(toon_display, mask, 0, 0, width, height, AllPlanes, ZPixmap);
+
+  for (y = 0; y < height; y++) {
+    for (x = 0; x < width; x++) {
+      int solid = 1;
+      if (msk) {
+        /* 1-bit masks: non-zero means solid */
+        solid = XGetPixel(msk, x, y) != 0;
+      }
+      if (solid) {
+        unsigned long p = XGetPixel(img, x, y);
+        XPutPixel(img, x, y, p | alpha_bits);
+      }
+    }
+  }
+
+  XPutImage(toon_display, pixmap, toon_drawGC, img, 0, 0, 0, 0, width, height);
+  XDestroyImage(img);
+  if (msk)
+    XDestroyImage(msk);
+}
+
 /* Store the pixmaps to the server */
 /* Returns 0 on success, otherwise the return value from the Xpm function */
 int
@@ -463,6 +496,20 @@ ToonInstallData(ToonData **data, int ngenera, int ntypes)
 				     &(d->mask),
 				     &attributes))) {
 	  return status;
+	}
+	if (wa.depth >= 32) {
+	  unsigned long alpha_bits =
+	    ~(wa.visual->red_mask | wa.visual->green_mask | wa.visual->blue_mask);
+	  /* Keep only bits that fit the depth (typically 0xff000000) */
+	  if (wa.depth < 32)
+	    alpha_bits &= (1UL << wa.depth) - 1;
+	  else
+	    alpha_bits &= 0xffffffffUL;
+	  if (alpha_bits) {
+	    unsigned int pw = d->width * d->nframes;
+	    unsigned int ph = d->height * (d->ndirections ? d->ndirections : 1);
+	    __ToonForceOpaqueAlpha(d->pixmap, d->mask, pw, ph, alpha_bits);
+	  }
 	}
       }
     }

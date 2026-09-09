@@ -203,6 +203,42 @@ ToonSetupDrawWindow(void)
 }
 
 
+
+/* Resize overlay (and refresh display metrics) if the desktop size changed */
+void
+ToonSyncDisplaySize(void)
+{
+  XWindowAttributes attributes;
+  int w, h;
+
+  XGetWindowAttributes(toon_display, toon_root, &attributes);
+  w = attributes.width;
+  h = attributes.height;
+
+  if (toon_root != toon_parent) {
+    toon_x_offset = attributes.x;
+    toon_y_offset = attributes.y;
+  }
+
+  if (w == toon_display_width && h == toon_display_height)
+    return;
+
+  toon_display_width = w;
+  toon_display_height = h;
+
+  if (toon_overlay_mode && toon_draw_window) {
+    XMoveResizeWindow(toon_display, toon_draw_window, 0, 0,
+                      (unsigned) w, (unsigned) h);
+    XLowerWindow(toon_display, toon_draw_window);
+  }
+
+  if (toon_squish_window) {
+    XMoveResizeWindow(toon_display, toon_squish_window, 0, 0,
+                      (unsigned) w, (unsigned) h);
+    XLowerWindow(toon_display, toon_squish_window);
+  }
+}
+
 /* Open display */
 Display *
 ToonOpenDisplay(char *display_name)
@@ -305,19 +341,26 @@ ToonInit(Display *d)
   toon_windows = XCreateRegion();
 
   /* Notify if the location of the client windows changes,
-     or if the window we are drawing to changes size */
-  if (toon_root != RootWindow(toon_display, screen)) {
-    if (toon_root == toon_parent) {
-      XSelectInput(toon_display, toon_root, SubstructureNotifyMask
-		   | StructureNotifyMask);
+     or if the window we are drawing to changes size.
+     Always listen for StructureNotify on the X root so we can resize
+     the overlay when the screen geometry changes (e.g. RandR). */
+  {
+    Window xroot = RootWindow(toon_display, screen);
+    if (toon_root != xroot) {
+      if (toon_root == toon_parent) {
+        XSelectInput(toon_display, toon_root, SubstructureNotifyMask
+                     | StructureNotifyMask);
+      }
+      else {
+        XSelectInput(toon_display, toon_root, StructureNotifyMask);
+        XSelectInput(toon_display, toon_parent, SubstructureNotifyMask);
+      }
+      XSelectInput(toon_display, xroot, StructureNotifyMask);
     }
     else {
-      XSelectInput(toon_display, toon_root, StructureNotifyMask);
-      XSelectInput(toon_display, toon_parent, SubstructureNotifyMask);
+      XSelectInput(toon_display, toon_parent,
+                   SubstructureNotifyMask | StructureNotifyMask);
     }
-  }
-  else {
-    XSelectInput(toon_display, toon_parent, SubstructureNotifyMask);
   }
 
   toon_nwindows = 0;

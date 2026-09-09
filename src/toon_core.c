@@ -189,14 +189,8 @@ ToonLocateWindows()
     }
   }
 
-  /* Check to see if toon_root has moved with respect to toon_parent */
-  XGetWindowAttributes(toon_display, toon_root, &attributes);
-  toon_display_width = attributes.width;
-  toon_display_height = attributes.height;
-  if (toon_root != toon_parent) {
-    toon_x_offset = attributes.x;
-    toon_y_offset = attributes.y;
-  }
+  /* Refresh display size (and resize overlay if needed) */
+  ToonSyncDisplaySize();
 
   /* Add windows to region */
   for (wx=0; wx<toon_nwindows; wx++) {

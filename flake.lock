@@ -37,8 +37,7 @@
     "root": {
       "inputs": {
         "flake-utils": "flake-utils",
-        "nixpkgs": "nixpkgs",
-        "xpenguins_src": "xpenguins_src"
+        "nixpkgs": "nixpkgs"
       }
     },
     "systems": {
@@ -54,19 +53,6 @@
         "owner": "nix-systems",
         "repo": "default",
         "type": "github"
-      }
-    },
-    "xpenguins_src": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1002013551,
-        "narHash": "sha256-S3Gdjb3Nkp1OJ260ygQFUo4kfuxO6OlhiexfRvCMtT0=",
-        "type": "tarball",
-        "url": "http://xpenguins.seul.org/xpenguins-2.2.tar.gz"
-      },
-      "original": {
-        "type": "tarball",
-        "url": "http://xpenguins.seul.org/xpenguins-2.2.tar.gz"
       }
     }
   },

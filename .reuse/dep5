@@ -1,15 +1,18 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: xpenguins-ng
-Upstream-Contact: xpenguins-ng contributors
+Upstream-Contact: Ingo Ruhnke <grumbel@gmail.com>
 Source: https://github.com/grumnix/xpenguins
 
 Files: themes/*
 Copyright: 1999-2001 Robin Hogan and theme authors
 License: GPL-2.0-or-later
 
-Files: AUTHORS ChangeLog NEWS INSTALL README.md README.original TODO.md
+Files: AUTHORS ChangeLog NEWS README.original
 Copyright: 1999-2001 Robin Hogan
-           2026 xpenguins-ng contributors
+License: GPL-2.0-or-later
+
+Files: INSTALL README.md TODO.md
+Copyright: 2026 Ingo Ruhnke <grumbel@gmail.com>
 License: GPL-2.0-or-later
 
 Files: COPYING
@@ -17,10 +20,10 @@ Copyright: Free Software Foundation, Inc.
 License: GPL-2.0-or-later
 
 Files: flake.nix flake.lock .gitignore
-Copyright: 2026 xpenguins-ng contributors
+Copyright: 2026 Ingo Ruhnke <grumbel@gmail.com>
 License: GPL-2.0-or-later
 
 Files: xpenguins-ng.1
 Copyright: 1999-2001 Robin Hogan
-           2026 xpenguins-ng contributors
+           2026 Ingo Ruhnke <grumbel@gmail.com>
 License: GPL-2.0-or-later

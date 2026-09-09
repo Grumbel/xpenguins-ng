@@ -1,5 +1,5 @@
 /* SPDX-FileCopyrightText: 1999-2001 Robin Hogan
- * SPDX-FileCopyrightText: 2026 xpenguins-ng contributors
+ * SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  */

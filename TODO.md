@@ -49,14 +49,19 @@ tarball and applied four small patches.
 - [x] CMake install verified (`bin/`, `man1/`, `share/xpenguins/themes/*`)
 - [x] README updated for CMake + overlay/classic drawing modes
 
+### Done (continued)
+
+- [x] Nix flake builds from in-tree sources via CMake (no tarball / patches)
+- [x] Remove obsolete fix-*.diff (fixes are in the source tree)
+- [x] SPDX identifiers on new build files (CMakeLists.txt, cmake/config.h.in)
+
 ### In progress / next
 
 - [ ] Runtime testing under real compositors (picom, Mutter, KWin)
 - [ ] Multi-monitor / Xinerama / per-output overlays (beyond single screen size)
 - [ ] Optional: output shape matching toon pixels (less overdraw)
 - [ ] Optional: XComposite / XDamage based invalidation if needed
-- [ ] Nix flake updated to build from the in-tree sources (optional)
-- [ ] REUSE / SPDX headers on new files; keep original GPL-2 headers
+- [ ] Full REUSE.toml / LICENSES layout (optional packaging polish)
 
 ### Design notes (compositor path)
 
@@ -87,11 +92,12 @@ Current dual-path:
   plus the four `fix-*.diff` files from the Nix flake repo.
 - Author for commits: Ingo Ruhnke <grumbel@gmail.com>
   with `Co-authored-by: Grok <grok@x.ai>`.
-- Deliverables are git bundles (`xpenguins-001-…`, stacked, HEAD ref).
+- Deliverables are git bundles (`xpenguins-00N-…`, stacked, HEAD ref).
+  History was rebased onto GitHub 66fd29f; use bundles 004+ on that base.
+  Bundles 001-003 are obsolete (unrelated root).
 - Do not remove features without discussion; prefer dual-path
   (classic root + overlay) over deleting the old drawing code.
-- Latest code lives in successive bundles; restore with
-  `git clone xpenguins-00N-….bundle` then pull next bundle if any.
+- Apply: checkout 66fd29f, then git pull 004, 005, 006, ...
 
 ## References
 

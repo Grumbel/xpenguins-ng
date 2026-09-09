@@ -159,6 +159,9 @@ main (int argc, char **argv)
       ShowUsage(argv);
       exit(0);
     }
+    else if (LongArgumentIs("-verbose")) {
+      xpenguins_verbose = 1;
+    }
     else if (ArgumentIs("-v", "-version")) {
       fprintf(stdout, "xpenguins-ng %s\n", XPENGUINS_VERSION);
       exit(0);

@@ -73,6 +73,16 @@ __ToonUpdateOverlayShape(Toon *t, int n)
     XFillRectangle(toon_display, frame_mask, mask_gc, 0, 0, width, height);
     XCopyPlane(toon_display, data->mask, frame_mask, mask_gc,
                src_x, src_y, width, height, 0, 0, 1);
+    /*
+     * Xpm clip masks: set bits = opaque (draw here).  ShapeBounding:
+     * set bits = part of the window.  Under real compositors the 1-bit
+     * mask from Xpm came out inverted for shaping (black where the
+     * sprite is transparent, holes on the body).  Invert for shape.
+     */
+    XSetFunction(toon_display, mask_gc, GXinvert);
+    XFillRectangle(toon_display, frame_mask, mask_gc, 0, 0, width, height);
+    XSetFunction(toon_display, mask_gc, GXcopy);
+
     XShapeCombineMask(toon_display, toon_draw_window, ShapeBounding,
                       toon->x_map, toon->y_map, frame_mask, ShapeUnion);
     XFreeGC(toon_display, mask_gc);

@@ -300,12 +300,25 @@ xpenguins_frame()
     return 0;
   }
 
-  /* check if windows have moved, and flush the display */
-  if ( ToonWindowsMoved() ) {
-    /* if so, check for squashed toons */
-    ToonCalculateAssociations(penguin, penguin_number);
-    ToonLocateWindows();
-    ToonRelocateAssociated(penguin, penguin_number);
+  /*
+   * Refresh the solid-window map when the X tree changes, and also on
+   * a timer.  Modern compositors often do not deliver reliable
+   * Unmap/Destroy to us for every closed client, so a periodic rescan
+   * is required or penguins keep walking on vanished geometry.
+   */
+  {
+    static int relocate_countdown = 0;
+    int moved = ToonWindowsMoved();
+    if (moved || --relocate_countdown <= 0) {
+      relocate_countdown = 30; /* ~0.5–1s depending on theme delay */
+      if (toon_debug && moved)
+	fprintf(stderr, "[xpenguins] window tree change -> relocate\n");
+      else if (0 && toon_debug && !moved)
+	fprintf(stderr, "[xpenguins] periodic relocate\n");
+      ToonCalculateAssociations(penguin, penguin_number);
+      ToonLocateWindows();
+      ToonRelocateAssociated(penguin, penguin_number);
+    }
   }
 
   /* Loop through all the toons */

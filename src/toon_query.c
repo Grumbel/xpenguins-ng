@@ -143,19 +143,29 @@ ToonCheckBlocked(Toon *toon, int type, int gravity)
 /* Returns 1 if any change to the top-level window configuration has occurred,
    0 otherwise */
 int
-ToonWindowsMoved()
+ToonWindowsMoved(void)
 {
   XEvent event;
-  int windows_moved=0;
+  int windows_moved = 0;
+
   while (XPending(toon_display)) {
     XNextEvent(toon_display, &event);
-    if (event.type == ConfigureNotify || event.type == MapNotify
-	|| event.type == UnmapNotify) {
-      windows_moved=1;
-    }
-    else if (event.type == ButtonPress) {
+    switch (event.type) {
+    case ConfigureNotify:
+    case MapNotify:
+    case UnmapNotify:
+    case CreateNotify:
+    case DestroyNotify:
+    case ReparentNotify:
+    case CirculateNotify:
+      windows_moved = 1;
+      break;
+    case ButtonPress:
       toon_button_x = ((XButtonEvent *) &event)->x;
       toon_button_y = ((XButtonEvent *) &event)->y;
+      break;
+    default:
+      break;
     }
   }
   return windows_moved;

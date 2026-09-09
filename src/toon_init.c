@@ -322,27 +322,18 @@ ToonInit(Display *d)
   /* Regions */
   toon_windows = XCreateRegion();
 
-  /* Notify if the location of the client windows changes,
-     or if the window we are drawing to changes size.
-     Always listen for StructureNotify on the X root so we can resize
-     the overlay when the screen geometry changes (e.g. RandR). */
+  /* Notify when top-level clients map/unmap/configure/destroy.
+     Always select SubstructureNotify on the real root (and on
+     toon_parent if different). StructureNotify on root catches RandR
+     size changes for the overlay. */
   {
     Window xroot = RootWindow(toon_display, screen);
-    if (toon_root != xroot) {
-      if (toon_root == toon_parent) {
-        XSelectInput(toon_display, toon_root, SubstructureNotifyMask
-                     | StructureNotifyMask);
-      }
-      else {
-        XSelectInput(toon_display, toon_root, StructureNotifyMask);
-        XSelectInput(toon_display, toon_parent, SubstructureNotifyMask);
-      }
-      XSelectInput(toon_display, xroot, StructureNotifyMask);
-    }
-    else {
-      XSelectInput(toon_display, toon_parent,
-                   SubstructureNotifyMask | StructureNotifyMask);
-    }
+    XSelectInput(toon_display, xroot,
+		 SubstructureNotifyMask | StructureNotifyMask);
+    if (toon_parent != xroot)
+      XSelectInput(toon_display, toon_parent, SubstructureNotifyMask);
+    if (toon_root != xroot && toon_root != toon_parent)
+      XSelectInput(toon_display, toon_root, StructureNotifyMask);
   }
 
   toon_nwindows = 0;

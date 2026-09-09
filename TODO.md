@@ -34,9 +34,9 @@ tarball and applied four small patches.
 
 ### In progress / next
 
-- [ ] Add CMakeLists.txt (executable + theme install + man page)
-- [ ] Define `PKGDATADIR` / theme search path via CMake
-- [ ] Provide a minimal `config.h` (or generate it) so `HAVE_CONFIG_H`
+- [x] Add CMakeLists.txt (executable + theme install + man page)
+- [x] Define `PKGDATADIR` / theme search path via CMake
+- [x] Provide a minimal `config.h` (or generate it) so `HAVE_CONFIG_H`
       and `VERSION` still work
 
 ### Compositor / drawing port (main technical work)

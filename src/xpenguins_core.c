@@ -315,6 +315,13 @@ xpenguins_frame()
   {
     static int relocate_countdown = 0;
     int moved = ToonWindowsMoved();
+    {
+      static int tray_poll_cd = 0;
+      if (--tray_poll_cd <= 0) {
+	tray_poll_cd = 60;
+	xpenguins_tray_poll();
+      }
+    }
     if (moved || --relocate_countdown <= 0) {
       relocate_countdown = 30; /* ~0.5–1s depending on theme delay */
       if (toon_debug && moved)

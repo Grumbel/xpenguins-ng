@@ -160,6 +160,7 @@ void xpenguins_set_directory(char *directory);
 const char *xpenguins_user_data_dir(void);
 int xpenguins_tray_init(Display *dpy);
 int xpenguins_tray_event(XEvent *event); /* 1 = user requested exit */
+void xpenguins_tray_poll(void);
 void xpenguins_tray_fini(void);
 
 

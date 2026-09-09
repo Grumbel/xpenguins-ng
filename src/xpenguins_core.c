@@ -43,12 +43,29 @@ __xpenguins_init_penguin(Toon *p)
   p->direction = RandInt(2);
   ToonSetType(p, PENGUIN_FALLER, p->direction,
 	      TOON_UNASSOCIATED);
+  /* Fully above the screen (y + height == 0).  The old value
+   * (1 - height) still overlapped any solid window at y==0 by one
+   * pixel; the faller then became a walker while embedded and the
+   * next frame's TOON_HERE check exploded it. */
   ToonSetPosition(p, RandInt(ToonDisplayWidth()
 			     - data->width),
-		  1 - data->height);
+		  -((int) data->height));
   ToonSetAssociation(p, TOON_UNASSOCIATED);
   ToonSetVelocity(p, (p->direction)*2-1, data->speed);
   p->terminating = 0;
+}
+
+
+/* If a toon is embedded in solid window area, nudge it upward until free.
+ * Used after a faller/tumbler "lands" so the following walker frame is
+ * not immediately TOON_HERE-squashed. */
+static void
+__xpenguins_lift_out_of_solid(Toon *p)
+{
+  int guard = 0;
+  while (ToonBlocked(p, TOON_HERE) && guard++ < toon_display_height) {
+    p->y -= 1;
+  }
 }
 
 /* Turn a penguin into a climber */
@@ -364,6 +381,7 @@ xpenguins_frame()
 	      else
 		penguin[i].direction = RandInt(2);
 	      __xpenguins_make_walker(penguin+i, 0);
+	      __xpenguins_lift_out_of_solid(penguin+i);
 	      penguin[i].pref_direction = -1;
 	    }
 	    else {
@@ -398,6 +416,7 @@ xpenguins_frame()
 	      else
 		penguin[i].direction = RandInt(2);
 	      __xpenguins_make_walker(penguin+i, 0);
+	      __xpenguins_lift_out_of_solid(penguin+i);
 	      penguin[i].pref_direction = -1;
 	    }
 	  }

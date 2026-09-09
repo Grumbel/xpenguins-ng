@@ -4,9 +4,8 @@
  */
 
 /*
- * XEmbed system tray icon (Penguins bomber, first frame).
- * Click = graceful exit.  Uses BackgroundPixmap so the icon stays
- * visible even when the tray never delivers Expose events (common).
+ * XEmbed system tray icon.  Icon is composited onto an opaque background
+ * so it stays visible on light/dark panels.  Click = graceful exit.
  */
 
 #include <stdio.h>
@@ -24,57 +23,113 @@
 #ifndef XEMBED_MAPPED
 #define XEMBED_MAPPED (1 << 0)
 #endif
+#ifndef XEMBED_EMBEDDED_NOTIFY
+#define XEMBED_EMBEDDED_NOTIFY 0
+#endif
 
 static Display *tray_dpy;
 static Window tray_win = None;
 static Window tray_owner = None;
-static Pixmap strip_pm = None;   /* full bomber strip */
-static Pixmap strip_mask = None;
-static Pixmap icon_pm = None;    /* square first frame (or drawn fallback) */
+static Pixmap strip_pm = None;
+static Pixmap icon_pm = None;   /* opaque square ready to blit */
 static GC tray_gc = None;
 static int icon_wh = 32;
 static int tray_w = 24, tray_h = 24;
-static Atom atom_opcode, atom_xembed_info, atom_manager, atom_selection;
+static Atom atom_opcode, atom_xembed_info, atom_xembed, atom_manager, atom_selection;
 static char tray_docked;
 static char tray_enabled;
+static char tray_embedded;
 
-static void
-__tray_draw_fallback(Pixmap pm, int wh)
+/* Build opaque icon: panel-friendly background + first bomber frame. */
+static int
+__tray_build_icon(void)
 {
-  GC gc = XCreateGC(tray_dpy, pm, 0, NULL);
-  unsigned long black = BlackPixel(tray_dpy, DefaultScreen(tray_dpy));
-  unsigned long white = WhitePixel(tray_dpy, DefaultScreen(tray_dpy));
-  XSetForeground(tray_dpy, gc, white);
-  XFillRectangle(tray_dpy, pm, gc, 0, 0, (unsigned) wh, (unsigned) wh);
-  XSetForeground(tray_dpy, gc, black);
-  XDrawRectangle(tray_dpy, pm, gc, 1, 1, (unsigned) (wh - 3), (unsigned) (wh - 3));
-  /* Simple "X" so something is always visible */
-  XDrawLine(tray_dpy, pm, gc, 4, 4, wh - 5, wh - 5);
-  XDrawLine(tray_dpy, pm, gc, wh - 5, 4, 4, wh - 5);
-  XFreeGC(tray_dpy, gc);
-}
+  char path[512];
+  XpmAttributes xa;
+  int screen = DefaultScreen(tray_dpy);
+  int depth = DefaultDepth(tray_dpy, screen);
+  unsigned long bg, fg;
+  XColor col, exact;
+  Colormap cmap = DefaultColormap(tray_dpy, screen);
 
-static void
-__tray_apply_background(void)
-{
-  if (!tray_dpy || tray_win == None || icon_pm == None)
-    return;
-  XSetWindowBackgroundPixmap(tray_dpy, tray_win, icon_pm);
-  XClearWindow(tray_dpy, tray_win);
-  XFlush(tray_dpy);
+  /* Distinct background so the slot is never “empty looking”. */
+  if (XAllocNamedColor(tray_dpy, cmap, "#5B9BD5", &col, &exact))
+    bg = col.pixel;
+  else
+    bg = WhitePixel(tray_dpy, screen);
+  fg = BlackPixel(tray_dpy, screen);
+
+  snprintf(path, sizeof(path), "%s/themes/Penguins/bomber.xpm",
+	   xpenguins_directory);
+  memset(&xa, 0, sizeof(xa));
+  xa.valuemask = XpmSize | XpmVisual | XpmColormap | XpmDepth;
+  xa.visual = DefaultVisual(tray_dpy, screen);
+  xa.colormap = cmap;
+  xa.depth = depth;
+
+  if (XpmReadFileToPixmap(tray_dpy, tray_win, path, &strip_pm, NULL, &xa)
+      != XpmSuccess) {
+    strip_pm = None;
+    if (xpenguins_verbose)
+      fprintf(stderr, "[xpenguins-ng] tray: failed to load %s\n", path);
+    icon_wh = 24;
+  } else {
+    icon_wh = (int) xa.height;
+    if (icon_wh < 16)
+      icon_wh = 24;
+    if (icon_wh > 48)
+      icon_wh = 32;
+    if (xpenguins_verbose)
+      fprintf(stderr, "[xpenguins-ng] tray: bomber strip %dx%d, using %dx%d\n",
+	      xa.width, xa.height, icon_wh, icon_wh);
+  }
+
+  if (icon_pm != None)
+    XFreePixmap(tray_dpy, icon_pm);
+  icon_pm = XCreatePixmap(tray_dpy, tray_win, (unsigned) icon_wh,
+			  (unsigned) icon_wh, (unsigned) depth);
+  if (tray_gc == None)
+    tray_gc = XCreateGC(tray_dpy, tray_win, 0, NULL);
+
+  XSetForeground(tray_dpy, tray_gc, bg);
+  XFillRectangle(tray_dpy, icon_pm, tray_gc, 0, 0,
+		 (unsigned) icon_wh, (unsigned) icon_wh);
+  XSetForeground(tray_dpy, tray_gc, fg);
+  XDrawRectangle(tray_dpy, icon_pm, tray_gc, 0, 0,
+		 (unsigned) (icon_wh - 1), (unsigned) (icon_wh - 1));
+
+  if (strip_pm != None) {
+    /* Copy first frame; XPM None pixels leave the blue background. */
+    XCopyArea(tray_dpy, strip_pm, icon_pm, tray_gc,
+	      0, 0, (unsigned) icon_wh, (unsigned) icon_wh, 0, 0);
+  } else {
+    XDrawLine(tray_dpy, icon_pm, tray_gc, 3, 3, icon_wh - 4, icon_wh - 4);
+    XDrawLine(tray_dpy, icon_pm, tray_gc, icon_wh - 4, 3, 3, icon_wh - 4);
+  }
+
+  tray_w = tray_h = icon_wh;
+  return 0;
 }
 
 static void
 __tray_paint(void)
 {
-  if (!tray_dpy || tray_win == None || icon_pm == None)
+  int x, y;
+  if (!tray_dpy || tray_win == None || icon_pm == None || tray_gc == None)
     return;
-  /* BackgroundPixmap survives most tray reparents; also copy in case not */
+
+  /* Fill tray window, then center the icon. */
+  XSetForeground(tray_dpy, tray_gc,
+		 BlackPixel(tray_dpy, DefaultScreen(tray_dpy)));
+  XFillRectangle(tray_dpy, tray_win, tray_gc, 0, 0,
+		 (unsigned) (tray_w > 0 ? tray_w : icon_wh),
+		 (unsigned) (tray_h > 0 ? tray_h : icon_wh));
+
+  x = (tray_w > icon_wh) ? (tray_w - icon_wh) / 2 : 0;
+  y = (tray_h > icon_wh) ? (tray_h - icon_wh) / 2 : 0;
+  XCopyArea(tray_dpy, icon_pm, tray_win, tray_gc,
+	    0, 0, (unsigned) icon_wh, (unsigned) icon_wh, x, y);
   XSetWindowBackgroundPixmap(tray_dpy, tray_win, icon_pm);
-  XClearWindow(tray_dpy, tray_win);
-  if (tray_gc != None)
-    XCopyArea(tray_dpy, icon_pm, tray_win, tray_gc,
-	      0, 0, (unsigned) icon_wh, (unsigned) icon_wh, 0, 0);
   XFlush(tray_dpy);
 }
 
@@ -92,8 +147,19 @@ static int
 __tray_send_dock(void)
 {
   XEvent ev;
+  XSizeHints hints;
+
   if (tray_win == None || tray_owner == None)
     return -1;
+
+  memset(&hints, 0, sizeof(hints));
+  hints.flags = PMinSize | PBaseSize | PWinGravity;
+  hints.min_width = hints.min_height = 16;
+  hints.base_width = hints.base_height = icon_wh;
+  hints.win_gravity = StaticGravity;
+  XSetWMNormalHints(tray_dpy, tray_win, &hints);
+  XResizeWindow(tray_dpy, tray_win, (unsigned) icon_wh, (unsigned) icon_wh);
+
   memset(&ev, 0, sizeof(ev));
   ev.xclient.type = ClientMessage;
   ev.xclient.send_event = True;
@@ -106,7 +172,10 @@ __tray_send_dock(void)
   ev.xclient.data.l[2] = (long) tray_win;
   XSendEvent(tray_dpy, tray_owner, False, NoEventMask, &ev);
   XSync(tray_dpy, False);
+  /* Some trays never map us unless we map ourselves after dock. */
+  XMapWindow(tray_dpy, tray_win);
   tray_docked = 1;
+  __tray_paint();
   return 0;
 }
 
@@ -115,55 +184,6 @@ __tray_find_owner(void)
 {
   tray_owner = XGetSelectionOwner(tray_dpy, atom_selection);
   return tray_owner != None;
-}
-
-static int
-__tray_load_icon(void)
-{
-  char path[512];
-  XpmAttributes xa;
-  int screen = DefaultScreen(tray_dpy);
-  int depth = DefaultDepth(tray_dpy, screen);
-
-  snprintf(path, sizeof(path), "%s/themes/Penguins/bomber.xpm",
-	   xpenguins_directory);
-  memset(&xa, 0, sizeof(xa));
-  xa.valuemask = XpmSize | XpmVisual | XpmColormap | XpmDepth;
-  xa.visual = DefaultVisual(tray_dpy, screen);
-  xa.colormap = DefaultColormap(tray_dpy, screen);
-  xa.depth = depth;
-
-  if (XpmReadFileToPixmap(tray_dpy, tray_win, path,
-			  &strip_pm, &strip_mask, &xa) != XpmSuccess) {
-    if (xpenguins_verbose)
-      fprintf(stderr, "[xpenguins-ng] tray: failed to load %s\n", path);
-    strip_pm = strip_mask = None;
-    icon_wh = 24;
-    icon_pm = XCreatePixmap(tray_dpy, tray_win, (unsigned) icon_wh,
-			    (unsigned) icon_wh, (unsigned) depth);
-    __tray_draw_fallback(icon_pm, icon_wh);
-  } else {
-    icon_wh = (int) xa.height;
-    if (icon_wh < 8)
-      icon_wh = 24;
-    if (icon_wh > 64)
-      icon_wh = 32;
-    icon_pm = XCreatePixmap(tray_dpy, tray_win, (unsigned) icon_wh,
-			    (unsigned) icon_wh, (unsigned) depth);
-    tray_gc = XCreateGC(tray_dpy, tray_win, 0, NULL);
-    XCopyArea(tray_dpy, strip_pm, icon_pm, tray_gc,
-	      0, 0, (unsigned) icon_wh, (unsigned) icon_wh, 0, 0);
-    if (xpenguins_verbose)
-      fprintf(stderr,
-	      "[xpenguins-ng] tray: loaded bomber %dx%d, icon %dx%d from %s\n",
-	      xa.width, xa.height, icon_wh, icon_wh, path);
-  }
-  if (tray_gc == None)
-    tray_gc = XCreateGC(tray_dpy, tray_win, 0, NULL);
-  tray_w = tray_h = icon_wh;
-  XResizeWindow(tray_dpy, tray_win, (unsigned) tray_w, (unsigned) tray_h);
-  __tray_apply_background();
-  return 0;
 }
 
 int
@@ -178,12 +198,14 @@ xpenguins_tray_init(Display *dpy)
   tray_dpy = dpy;
   tray_enabled = 1;
   tray_docked = 0;
+  tray_embedded = 0;
   screen = DefaultScreen(dpy);
 
   snprintf(selname, sizeof(selname), "_NET_SYSTEM_TRAY_S%d", screen);
   atom_selection = XInternAtom(dpy, selname, False);
   atom_opcode = XInternAtom(dpy, "_NET_SYSTEM_TRAY_OPCODE", False);
   atom_xembed_info = XInternAtom(dpy, "_XEMBED_INFO", False);
+  atom_xembed = XInternAtom(dpy, "_XEMBED", False);
   atom_manager = XInternAtom(dpy, "MANAGER", False);
 
   swa.background_pixel = WhitePixel(dpy, screen);
@@ -207,22 +229,20 @@ xpenguins_tray_init(Display *dpy)
   classhint.res_class = "Xpenguins-ng";
   XSetClassHint(dpy, tray_win, &classhint);
   XStoreName(dpy, tray_win, title);
-  XChangeProperty(dpy, tray_win, XInternAtom(dpy, "_NET_WM_NAME", False),
-		  XInternAtom(dpy, "UTF8_STRING", False), 8, PropModeReplace,
-		  (unsigned char *) title, (int) strlen(title));
 
   __tray_set_xembed_info();
-  __tray_load_icon();
+  __tray_build_icon();
 
   if (__tray_find_owner()) {
     __tray_send_dock();
     if (xpenguins_verbose)
       fprintf(stderr,
-	      "[xpenguins-ng] system tray docked on 0x%lx (click to exit)\n",
-	      (unsigned long) tray_owner);
+	      "[xpenguins-ng] tray: docked on 0x%lx, win 0x%lx, icon %dx%d "
+	      "(opaque blue bg; click to exit)\n",
+	      (unsigned long) tray_owner, (unsigned long) tray_win,
+	      icon_wh, icon_wh);
   } else if (xpenguins_verbose) {
-    fprintf(stderr,
-	    "[xpenguins-ng] no system tray yet (%s); will retry\n", selname);
+    fprintf(stderr, "[xpenguins-ng] tray: no manager for %s yet\n", selname);
   }
   return 0;
 }
@@ -241,9 +261,19 @@ xpenguins_tray_event(XEvent *event)
       tray_docked = 0;
       __tray_set_xembed_info();
       __tray_send_dock();
-      __tray_apply_background();
+    }
+    return 0;
+  }
+
+  if (event->type == ClientMessage
+      && event->xclient.message_type == atom_xembed
+      && event->xclient.window == tray_win) {
+    long msg = event->xclient.data.l[1];
+    if (msg == XEMBED_EMBEDDED_NOTIFY) {
+      tray_embedded = 1;
       if (xpenguins_verbose)
-	fprintf(stderr, "[xpenguins-ng] system tray manager ready, docked\n");
+	fprintf(stderr, "[xpenguins-ng] tray: XEMBED_EMBEDDED_NOTIFY\n");
+      __tray_paint();
     }
     return 0;
   }
@@ -259,13 +289,26 @@ xpenguins_tray_event(XEvent *event)
   case ConfigureNotify:
     tray_w = event->xconfigure.width;
     tray_h = event->xconfigure.height;
-    __tray_apply_background();
+    if (xpenguins_verbose)
+      fprintf(stderr, "[xpenguins-ng] tray: configure %dx%d @ %d,%d\n",
+	      tray_w, tray_h, event->xconfigure.x, event->xconfigure.y);
+    __tray_paint();
+    break;
+  case ReparentNotify:
+    if (xpenguins_verbose)
+      fprintf(stderr, "[xpenguins-ng] tray: reparented to 0x%lx @ %d,%d\n",
+	      (unsigned long) event->xreparent.parent,
+	      event->xreparent.x, event->xreparent.y);
     __tray_paint();
     break;
   case MapNotify:
-  case ReparentNotify:
-    __tray_apply_background();
+    if (xpenguins_verbose)
+      fprintf(stderr, "[xpenguins-ng] tray: mapped\n");
     __tray_paint();
+    break;
+  case UnmapNotify:
+    if (xpenguins_verbose)
+      fprintf(stderr, "[xpenguins-ng] tray: unmapped\n");
     break;
   case ButtonRelease:
     if (event->xbutton.button == Button1)
@@ -285,12 +328,9 @@ xpenguins_tray_poll(void)
   if (!tray_docked && __tray_find_owner()) {
     __tray_set_xembed_info();
     __tray_send_dock();
-    if (xpenguins_verbose)
-      fprintf(stderr, "[xpenguins-ng] system tray found on retry, docked\n");
   }
-  /* Keep background pixmap applied; some trays clear the window. */
   if (tray_docked)
-    __tray_apply_background();
+    __tray_paint();
 }
 
 void
@@ -304,13 +344,11 @@ xpenguins_tray_fini(void)
     XFreePixmap(tray_dpy, icon_pm);
   if (strip_pm != None)
     XFreePixmap(tray_dpy, strip_pm);
-  if (strip_mask != None)
-    XFreePixmap(tray_dpy, strip_mask);
   if (tray_win != None)
     XDestroyWindow(tray_dpy, tray_win);
   tray_gc = None;
-  icon_pm = strip_pm = strip_mask = None;
+  icon_pm = strip_pm = None;
   tray_win = tray_owner = None;
   tray_dpy = NULL;
-  tray_docked = tray_enabled = 0;
+  tray_docked = tray_enabled = tray_embedded = 0;
 }

@@ -56,6 +56,8 @@
 #define TOON_SHAPEDWINDOWS (1L<<7)
 #define TOON_SQUISH (1L<<8)
 #define TOON_NOSQUISH (1L<<9)
+#define TOON_OVERLAY (1L<<10)
+#define TOON_NOOVERLAY (1L<<11)
 
 #define TOON_NOCATCHSIGNALS (1L<<16)
 #define TOON_CATCHSIGNALS (1L<<17)
@@ -127,9 +129,12 @@ void __ToonExitGracefully(int sig);
  * and we're unlikely to want to two threads in the same program writing
  * to two different screens */
 extern Display *toon_display;
-extern Window toon_root; /* the window to draw to */
+extern Window toon_root; /* desktop / virtual root (window map geometry) */
 extern Window toon_parent; /* the parent window of all the client windows */
+extern Window toon_draw_window; /* drawable for toon pixels (root or overlay) */
 extern Window toon_root_override; /* override both toon_root and toon_parent */
+extern char toon_overlay_mode; /* 1 if using transparent overlay */
+extern char toon_overlay_preference; /* -1 auto, 0 classic, 1 overlay */
 extern int toon_x_offset, toon_y_offset; /* toon_root relative to toon_parent */
 extern int toon_display_width, toon_display_height;
 extern GC toon_drawGC;
@@ -171,6 +176,7 @@ Display *ToonOpenDisplay(char *display_name);
 int ToonInit(Display *display);
 int ToonConfigure(unsigned long int code);
 int ToonInstallData(ToonData **data, int ngenera, int ntypes);
+int ToonSetupDrawWindow(void);
 #define ToonSetRoot(id) toon_root_override = (Window) id
 
 /* FINISHING UP (toon_end.c) */

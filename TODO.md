@@ -55,6 +55,11 @@ tarball and applied four small patches.
 - [x] Remove obsolete fix-*.diff (fixes are in the source tree)
 - [x] SPDX identifiers on new build files (CMakeLists.txt, cmake/config.h.in)
 
+### Done (continued)
+
+- [x] Fix BadMatch on XCopyArea in overlay mode (Xpm pixmaps must use
+      overlay visual/colormap/depth)
+
 ### In progress / next
 
 - [ ] Runtime testing under real compositors (picom, Mutter, KWin)

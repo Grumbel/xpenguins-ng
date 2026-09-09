@@ -434,11 +434,24 @@ ToonInstallData(ToonData **data, int ngenera, int ntypes)
 {
   int i, j, status;
   XpmAttributes attributes;
+  XWindowAttributes wa;
+
+  /* Pixmaps must match the depth/visual of toon_draw_window.
+   * With an ARGB overlay (depth 32) the default Xpm path would often
+   * create depth-24 pixmaps and XCopyArea would fail with BadMatch. */
+  XGetWindowAttributes(toon_display, toon_draw_window, &wa);
+
+  memset(&attributes, 0, sizeof(attributes));
   attributes.valuemask = (XpmReturnPixels
-			  | XpmReturnExtensions | XpmExactColors 
-			  | XpmCloseness);
-  attributes.exactColors=False;
-  attributes.closeness=40000;
+			  | XpmReturnExtensions | XpmExactColors
+			  | XpmCloseness
+			  | XpmVisual | XpmColormap | XpmDepth);
+  attributes.exactColors = False;
+  attributes.closeness = 40000;
+  attributes.visual = wa.visual;
+  attributes.colormap = wa.colormap;
+  attributes.depth = wa.depth;
+
   for (i = 0; i < ngenera; ++i) {
     for (j = 0; j < ntypes; ++j) {
       ToonData *d = data[i]+j;
@@ -446,8 +459,8 @@ ToonInstallData(ToonData **data, int ngenera, int ntypes)
 	if ((status =
 	     XpmCreatePixmapFromData(toon_display, toon_draw_window,
 				     d->image,
-				     &(d->pixmap), 
-				     &(d->mask), 
+				     &(d->pixmap),
+				     &(d->mask),
 				     &attributes))) {
 	  return status;
 	}

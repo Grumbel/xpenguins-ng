@@ -41,17 +41,22 @@ tarball and applied four small patches.
   - Overlay excluded from window collision map
   - Classic path kept for non-compositing WMs and `--id`
 
+### Done (continued)
+
+- [x] Drop unused `X11/Intrinsic.h` (no Xt link dependency)
+- [x] `ToonSyncDisplaySize()`: resize overlay/squish window when desktop size changes
+- [x] Select `StructureNotify` on X root so size changes are noticed
+- [x] CMake install verified (`bin/`, `man1/`, `share/xpenguins/themes/*`)
+- [x] README updated for CMake + overlay/classic drawing modes
+
 ### In progress / next
 
 - [ ] Runtime testing under real compositors (picom, Mutter, KWin)
-- [ ] Multi-monitor / RandR: resize overlay when screen size changes
+- [ ] Multi-monitor / Xinerama / per-output overlays (beyond single screen size)
 - [ ] Optional: output shape matching toon pixels (less overdraw)
 - [ ] Optional: XComposite / XDamage based invalidation if needed
-- [ ] Drop Xt/Intrinsic include if unused (currently only `#include`)
-- [ ] CMake install verification (`cmake --install` layout)
 - [ ] Nix flake updated to build from the in-tree sources (optional)
 - [ ] REUSE / SPDX headers on new files; keep original GPL-2 headers
-- [ ] README update describing CMake and compositor behaviour
 
 ### Design notes (compositor path)
 

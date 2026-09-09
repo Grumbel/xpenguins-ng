@@ -1,3 +1,9 @@
+/* SPDX-FileCopyrightText: 1999-2001 Robin Hogan
+ * SPDX-FileCopyrightText: 2026 xpenguins-ng contributors
+ *
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
+
 /* XPENGUINS - cool little penguins that walk along the tops of your windows
  * Copyright (C) 1999-2001  Robin Hogan
  *

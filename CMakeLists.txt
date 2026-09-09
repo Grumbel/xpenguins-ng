@@ -1,4 +1,6 @@
+# SPDX-FileCopyrightText: 2026 xpenguins-ng contributors
 # SPDX-License-Identifier: GPL-2.0-or-later
+
 cmake_minimum_required(VERSION 3.16)
 project(xpenguins-ng VERSION 3.0 LANGUAGES C)
 

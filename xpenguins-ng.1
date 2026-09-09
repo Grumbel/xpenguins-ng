@@ -5,20 +5,23 @@ xpenguins-ng \- cute little penguins (modern X11 fork of xpenguins) that walk al
 .B xpenguins-ng
 [-option ...]
 .SH DESCRIPTION
-.IR XPenguins
-is a program for animating cute cartoons/animals in your root window.
-By default it will be penguins - they drop in from the top of the
-screen, walk along the tops of your windows, up the side of your
-windows, levitate, skateboard, and do other similarly exciting
-things. Be careful when you move windows as the little guys squash
-easily. If you send the program an interupt signal (such as by
-hitting Ctrl-C) they will burst.
-.I XPenguins
-is now themeable, so it is easy to select something else to animate
-instead of penguins, or even (with a little artistic talent) define
-your own; see the
+.B xpenguins-ng
+is a maintained fork of XPenguins that animates cartoons (penguins by
+default) on an X11 desktop. Toons drop from the top of the screen, walk
+along the tops of windows, climb, skateboard, and so on.
+.PP
+On modern compositing window managers the default is a
+.B shaped overlay
+window so the sprites stay visible without drawing on the root window.
+Use
+.B \-\-no\-overlay
+for the classic root/desktop drawing path. Be careful when moving
+windows: the little guys squash easily. An interrupt signal (e.g. Ctrl-C)
+makes them burst and exit.
+.PP
+Themes select other animals or characters. See
 .B THEMES
-section below.
+below.
 .SH OPTIONS
 In all the following cases a double dash can be replaced by a single
 dash.
@@ -33,7 +36,7 @@ Do not show any gory death sequences.
 .BI "\-c " dir ", \-\-config\-dir " dir
 Look for config files and themes in this directory. The default is
 usually
-.IR /usr/share/xpenguins-ng "."
+.IR /usr/share/xpenguins-ng-ng "."
 .TP 8
 .BI "\-d " display ", \-\-display " display
 Send the toons to the specified X display. In the absence of this
@@ -115,6 +118,11 @@ pseudo file (probably just Linux). When there are no toons on the screen,
 uses only a miniscule amount of CPU time - it just wakes up every 5
 seconds to recheck the load.
 .TP
+.TP
+.B "\-\-debug"
+Print window-map and spawn diagnostics to standard error (solid
+candidates, skipped desktops, display size, relocate events).
+.TP
 .B "\-\-overlay"
 Force the transparent shaped overlay drawing path (for compositing
 window managers). By default this path is selected automatically when
@@ -126,9 +134,9 @@ is running.
 
 .SH THEMES
 The system themes are usually kept in
-.IR /usr/share/xpenguins-ng/themes ", "
+.IR /usr/share/xpenguins-ng-ng/themes ", "
 and these can be augmented or overridden by the user's themes in
-.IR $HOME/.xpenguins-ng/themes "."
+.IR $HOME/.xpenguins-ng-ng/themes "."
 Each theme has its own subdirectory which to be valid must contain a
 file called
 .IR config "."
@@ -162,7 +170,7 @@ rather terse description of it or you can have a look at the config
 file for the default
 .B Penguins
 theme, which is usually installed at
-.IR /usr/share/xpenguins-ng/themes/Penguins/config ","
+.IR /usr/share/xpenguins-ng-ng/themes/Penguins/config ","
 and is reasonably well commented. We'll first establish some simple
 terminology. Say you have a Farmyard theme with cows and sheep. The
 cows and sheep are types of 
@@ -377,9 +385,9 @@ the root window then the toons will erase them when they walk over
 them, although an expose event will be sent to the window every 100
 frames to redraw them.
 .SH FILES
-$HOME/.xpenguins-ng/themes/*
+$HOME/.xpenguins-ng-ng/themes/*
 .br
-/usr/share/xpenguins-ng/themes/*
+/usr/share/xpenguins-ng-ng/themes/*
 .br
 /proc/loadavg
 .br

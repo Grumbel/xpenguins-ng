@@ -1,3 +1,6 @@
+;; SPDX-FileCopyrightText: 1999-2001 Robin Hogan
+;; SPDX-License-Identifier: GPL-2.0-or-later
+
 ; lay-out-frames - lay out frames of animated gif to make xpenguins theme
 ; Copyright (C) 2001 Robin Hogan
 ;

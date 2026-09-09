@@ -1,3 +1,9 @@
+/* SPDX-FileCopyrightText: 1999-2001 Robin Hogan
+ * SPDX-FileCopyrightText: 2026 xpenguins-ng contributors
+ *
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
+
 /* xpenguins_config.c - simple functions for reading a config file
  * Copyright (C) 1999-2001  Robin Hogan
  *

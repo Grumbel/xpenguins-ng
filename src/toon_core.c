@@ -1,3 +1,9 @@
+/* SPDX-FileCopyrightText: 1999-2001 Robin Hogan
+ * SPDX-FileCopyrightText: 2026 xpenguins-ng contributors
+ *
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
+
 /* toon_core.c - core functions for advancing a frame of the animation
  * Copyright (C) 1999-2001  Robin Hogan
  *

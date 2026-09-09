@@ -1,3 +1,6 @@
+;; SPDX-FileCopyrightText: 1999-2001 Robin Hogan
+;; SPDX-License-Identifier: GPL-2.0-or-later
+
 ; resize-frames - resize an xpenguins image with no bleeding between frames
 ; Copyright (C) 2001 Robin Hogan
 ;

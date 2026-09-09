@@ -1,3 +1,9 @@
+/* SPDX-FileCopyrightText: 1999-2001 Robin Hogan
+ * SPDX-FileCopyrightText: 2026 xpenguins-ng contributors
+ *
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
+
 /* toon_init.c - initialising various things
  * Copyright (C) 1999-2001  Robin Hogan
  *

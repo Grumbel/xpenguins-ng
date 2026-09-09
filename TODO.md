@@ -31,77 +31,67 @@ tarball and applied four small patches.
   - `snprintf(file_base, …, "%s", word)` format fix
 - [x] Drop autotools-generated files from the tree
 - [x] Initial `.gitignore`
+- [x] CMakeLists.txt (binary, man page, themes, `PKGDATADIR`, `config.h`)
+- [x] Compositor-friendly transparent overlay path (`ToonSetupDrawWindow`)
+  - Auto when `_NET_WM_CM_Sn` is owned; force with `--overlay` /
+    `--no-overlay` / `--root`
+  - ARGB visual, background pixel 0, click-through via XFixes/XShape
+  - Draw/erase use `toon_draw_window`; desktop geometry still from
+    `toon_root` / `toon_parent`
+  - Overlay excluded from window collision map
+  - Classic path kept for non-compositing WMs and `--id`
 
 ### In progress / next
 
-- [x] Add CMakeLists.txt (executable + theme install + man page)
-- [x] Define `PKGDATADIR` / theme search path via CMake
-- [x] Provide a minimal `config.h` (or generate it) so `HAVE_CONFIG_H`
-      and `VERSION` still work
-
-### Compositor / drawing port (main technical work)
-
-Background: the classic code draws with `XCopyArea` / `XClearArea` on
-`toon_root` (found by `ToonGetRootWindow()`). Under a compositor the
-root is redirected or covered; clearing leaves trails, and drawing is
-often invisible.
-
-Preferred approach (keep classic path when possible):
-
-1. Detect compositor / whether root drawing is usable
-   (e.g. `_NET_WM_CM_S0` selection owner, or a simple probe).
-2. When a compositor is present (or forced), create a full-screen
-   override-redirect window with:
-   - ARGB visual + 32-bit depth when available
-   - input shape empty (click-through) via XFixes or XShape
-   - output shape / alpha so only the toon pixels are opaque
-   - rest of the window fully transparent
-3. Draw toons into that window instead of the root; erase by clearing
-   the previous rectangle to transparent (or double-buffer / reshape).
-4. Keep `ToonGetRootWindow()` and the old root-drawing path for
-   non-compositing WMs and for `--id` / override cases.
-5. Window geometry map for walking still comes from scanning client
-   windows under `toon_parent` (existing logic in `toon_query.c` /
-   associate); that part should remain valid.
-
-Optional later:
-
-- [ ] XComposite / XDamage based invalidation if needed
-- [ ] Multi-monitor / RandR awareness beyond current screen size
-- [ ] Drop Xt/Intrinsic dependency if it is only used lightly
-
-### Build / packaging polish
-
-- [ ] CMake install: binary, man page, themes under
-      `${CMAKE_INSTALL_DATADIR}/xpenguins/themes/...`
+- [ ] Runtime testing under real compositors (picom, Mutter, KWin)
+- [ ] Multi-monitor / RandR: resize overlay when screen size changes
+- [ ] Optional: output shape matching toon pixels (less overdraw)
+- [ ] Optional: XComposite / XDamage based invalidation if needed
+- [ ] Drop Xt/Intrinsic include if unused (currently only `#include`)
+- [ ] CMake install verification (`cmake --install` layout)
 - [ ] Nix flake updated to build from the in-tree sources (optional)
 - [ ] REUSE / SPDX headers on new files; keep original GPL-2 headers
-- [ ] Basic README update describing CMake and compositor behaviour
+- [ ] README update describing CMake and compositor behaviour
 
-### Known issues from original / packaging
+### Design notes (compositor path)
 
-- Penguins on root leave trails under compositors
-- Drawing on root is invisible on many modern DEs
-- Autotools `configure` had K&R `main()` (fixed only in generated
-  configure in the flake; irrelevant once on CMake)
-- Theme path relies on `PKGDATADIR` compile-time define
+Classic code drew with `XCopyArea` / `XClearArea` on `toon_root`. Under
+a compositor the root is redirected or covered; clearing leaves trails
+and drawing is often invisible.
+
+Current dual-path:
+
+1. Detect compositor via `_NET_WM_CM_Sn` selection owner (or CLI force).
+2. Overlay: full-screen override-redirect ARGB window, empty input shape
+   (unless `--squish`), `_NET_WM_WINDOW_TYPE_DESKTOP`, lowered.
+3. `toon_draw_window` is the overlay; erase clears to transparent bg.
+4. `ToonGetRootWindow()` still finds desktop geometry / client parent.
+5. Window map for walking still scans children of `toon_parent`.
+
+### Known residual risks
+
+- Overlay stacking vs desktop wallpaper clients may need WM-specific
+  tweaks.
+- Squish + overlay: click-through disabled; events on overlay window.
+- No automated display test in this environment (no real X session).
+- Theme path still depends on install-time `PKGDATADIR`.
 
 ## Notes for continuation
 
-- Work tree was bootstrapped from `http://xpenguins.seul.org/xpenguins-2.2.tar.gz`
+- Work tree bootstrapped from `http://xpenguins.seul.org/xpenguins-2.2.tar.gz`
   plus the four `fix-*.diff` files from the Nix flake repo.
 - Author for commits: Ingo Ruhnke <grumbel@gmail.com>
   with `Co-authored-by: Grok <grok@x.ai>`.
 - Deliverables are git bundles (`xpenguins-001-…`, stacked, HEAD ref).
 - Do not remove features without discussion; prefer dual-path
   (classic root + overlay) over deleting the old drawing code.
+- Latest code lives in successive bundles; restore with
+  `git clone xpenguins-00N-….bundle` then pull next bundle if any.
 
 ## References
 
 - Original homepage: http://xpenguins.seul.org/
-- Modern rewrite (GTK3 overlay, different codebase): 
+- Modern rewrite (GTK3 overlay, different codebase):
   https://www.ratrabbit.nl/ratrabbit/software/xpenguins
-  (useful as design reference for transparent click-through windows,
-  not as a drop-in replacement of this tree)
 - xsnow / compositor-friendly approaches: transparent fullscreen
   override-redirect window with empty input shape

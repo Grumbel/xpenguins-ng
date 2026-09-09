@@ -222,7 +222,7 @@ ToonLocateWindows()
       width = attributes.width + 2 * attributes.border_width;
       height = attributes.height + 2 * attributes.border_width;
 
-      /* Entirely offscreen? */
+      /* Entirely offscreen? (do NOT skip y<=0: that excluded maximized windows) */
       if (x >= toon_display_width) continue;
       if (y >= toon_display_height) continue;
       if (y + (int) height <= 0) continue;

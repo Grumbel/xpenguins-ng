@@ -327,8 +327,18 @@ xpenguins_frame()
       long int conf = data->conf;
 
       last_active = i;
-      if ( !((conf & TOON_NOBLOCK) | (conf & TOON_INVULNERABLE))
-	   && ToonBlocked(penguin+i, TOON_HERE)) {
+      /*
+       * TOON_HERE means the toon is embedded in solid window area
+       * (e.g. a window was mapped on top of it).  Fallers/tumblers/
+       * floaters legitimately overlap the top edge of windows while
+       * landing — especially maximized windows at y==0, since spawn
+       * is at y = 1-height.  Their collisions are handled by
+       * ToonAdvance; do not treat that as a squash.
+       */
+      if (type != PENGUIN_FALLER && type != PENGUIN_TUMBLER
+	  && type != PENGUIN_FLOATER
+	  && !((conf & TOON_NOBLOCK) | (conf & TOON_INVULNERABLE))
+	  && ToonBlocked(penguin+i, TOON_HERE)) {
 	if (xpenguins_blood && gdata[PENGUIN_SQUASHED].exists) {
 	  ToonSetType(penguin+i, PENGUIN_SQUASHED,
 		      penguin[i].direction, TOON_HERE);

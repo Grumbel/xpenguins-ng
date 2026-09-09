@@ -80,6 +80,11 @@ tarball and applied four small patches.
 - [x] Occlusion-aware window map: only visible (uncovered) window
       surface is solid; no walking on tops hidden behind others
 
+### Done (continued)
+
+- [x] Do not squash fallers/tumblers/floaters on TOON_HERE (spawn vs
+      maximized windows at y=0 caused instant explosions)
+
 ### In progress / next
 
 - [ ] Runtime testing under real compositors (picom, Mutter, KWin)

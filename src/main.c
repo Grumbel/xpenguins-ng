@@ -203,6 +203,12 @@ main (int argc, char **argv)
     else if (ArgumentIs("-s", "-squish")) {
       ToonConfigure(TOON_SQUISH);
     }
+    else if (LongArgumentIs("-overlay")) {
+      ToonConfigure(TOON_OVERLAY);
+    }
+    else if (LongArgumentIs("-no-overlay") || LongArgumentIs("-root")) {
+      ToonConfigure(TOON_NOOVERLAY);
+    }
     else if (LongArgumentIs("-all")) {
       all_themes = 1;
     }
@@ -411,6 +417,8 @@ ShowUsage(char **argv)
 	    "  -b, --no-blood                    Do not show any gory images\n"
 	    "  -a, --no-angels                   Do not show any cherubim\n"
 	    "  -s, --squish                      kill penguins with mouse\n"
+	    "      --overlay                     force transparent overlay (compositor)\n"
+	    "      --no-overlay, --root          force classic root-window drawing\n"
 	    "      --all                         Run all available themes simultaneously\n"
 	    "      --id             <window id>  Send penguins to window with this ID\n"
 	    "      --nice           <ld1> <ld2>  Start killing penguins when load reaches\n"

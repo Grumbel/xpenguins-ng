@@ -106,13 +106,25 @@ ToonDraw(Toon *t, int n)
 	direction = 0;
       }
 
-      XSetClipOrigin(toon_display, toon_drawGC,
-		     t->x-width*t->frame, t->y-height*direction); 
-      XSetClipMask(toon_display, toon_drawGC, data->mask);   
+      /*
+       * Classic path: clip to the Xpm mask so we only paint opaque
+       * pixels onto the root/desktop.
+       * Overlay path: paint the full frame rectangle; ShapeBounding
+       * already restricts which pixels are visible.  Using the clip
+       * mask here left the shaped (visible) body unpainted when mask
+       * polarity differed from ShapeBounding, producing solid black
+       * penguins.
+       */
+      if (!toon_overlay_mode) {
+	XSetClipOrigin(toon_display, toon_drawGC,
+		       t->x-width*t->frame, t->y-height*direction);
+	XSetClipMask(toon_display, toon_drawGC, data->mask);
+      }
       XCopyArea(toon_display, data->pixmap,
 		toon_draw_window,toon_drawGC,width*t->frame,height*direction,
 		width,height,t->x,t->y);
-      XSetClipMask(toon_display, toon_drawGC, None);
+      if (!toon_overlay_mode)
+	XSetClipMask(toon_display, toon_drawGC, None);
       t->x_map = t->x;
       t->y_map = t->y;
       t->width_map = width;

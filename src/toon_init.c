@@ -295,7 +295,7 @@ ToonInit(Display *d)
   /* Set Graphics Context */
   gc_values.function = GXcopy;
   gc_values.graphics_exposures = False;
-  gc_values.fill_style = FillTiled;
+  gc_values.fill_style = FillSolid;
   toon_drawGC = XCreateGC(toon_display, toon_draw_window,
 			  GCFunction | GCFillStyle | GCGraphicsExposures,
 			  &gc_values);

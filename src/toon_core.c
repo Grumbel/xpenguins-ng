@@ -271,11 +271,24 @@ ToonLocateWindows(void)
       if (y + (int) height <= 0) continue;
       if (x + (int) width <= 0) continue;
 
-      /* Near-fullscreen windows low in the stack are usually wallpaper */
-      if (wx < 3
-	  && width >= (unsigned) toon_display_width - 16
-	  && height >= (unsigned) toon_display_height - 16
-	  && x <= 8 && y <= 8) {
+      /*
+       * Windows with y <= 0 (maximized, wallpapers, top strips) have a
+       * top edge at the screen edge. Walkers there sit at y = -height and
+       * are fully off-screen. Classic xpenguins skipped these so penguins
+       * fall through maximized windows and walk on y > 0 tops / panels.
+       */
+      if (y <= 0) {
+	if (toon_debug)
+	  fprintf(stderr,
+		  "[xpenguins] skip y<=0 window 0x%lx (%d,%d) %ux%u\n",
+		  (unsigned long) children[wx], x, y, width, height);
+	continue;
+      }
+
+      /* Low-stack near-fullscreen: wallpaper without DESKTOP type */
+      if (wx < 5
+	  && width >= (unsigned) toon_display_width / 3
+	  && height >= (unsigned) toon_display_height - 32) {
 	if (toon_debug)
 	  fprintf(stderr,
 		  "[xpenguins] skip full-screen low-stack 0x%lx (%d,%d) %ux%u\n",

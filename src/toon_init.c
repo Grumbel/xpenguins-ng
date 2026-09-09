@@ -175,10 +175,19 @@ ToonSyncDisplaySize(void)
 {
   XWindowAttributes attributes;
   int w, h;
+  int screen = DefaultScreen(toon_display);
+  Window real_root = RootWindow(toon_display, screen);
 
-  XGetWindowAttributes(toon_display, toon_root, &attributes);
+  /* Prefer the real root window size so multi-monitor virtual desktops
+   * (e.g. 3840x1440) are used, not a single-head desktop window. */
+  XGetWindowAttributes(toon_display, real_root, &attributes);
   w = attributes.width;
   h = attributes.height;
+  if (w < 1 || h < 1) {
+    XGetWindowAttributes(toon_display, toon_root, &attributes);
+    w = attributes.width;
+    h = attributes.height;
+  }
 
   if (toon_root != toon_parent) {
     toon_x_offset = attributes.x;
@@ -242,9 +251,17 @@ ToonInit(Display *d)
   else {
     toon_root = ToonGetRootWindow(toon_display, screen, &toon_parent);
   }
-  XGetWindowAttributes(toon_display, toon_root, &attributes);
-  toon_display_width = attributes.width;
-  toon_display_height = attributes.height;
+  {
+    Window real_root = RootWindow(toon_display, screen);
+    XGetWindowAttributes(toon_display, real_root, &attributes);
+    toon_display_width = attributes.width;
+    toon_display_height = attributes.height;
+    if (toon_display_width < 1 || toon_display_height < 1) {
+      XGetWindowAttributes(toon_display, toon_root, &attributes);
+      toon_display_width = attributes.width;
+      toon_display_height = attributes.height;
+    }
+  }
   if (toon_root != toon_parent) {
     /* Work out the position of toon_root with respect to toon_parent;
      * assume for now that toon_parent is the same size as the root

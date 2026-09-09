@@ -42,33 +42,6 @@ __ToonCompositorRunning(Display *dpy, int screen)
   return XGetSelectionOwner(dpy, atom) != None;
 }
 
-/* Find a 32-bit TrueColor visual suitable for a transparent overlay */
-static int
-__ToonFindArgbVisual(Display *dpy, int screen, XVisualInfo *vi_out)
-{
-  XVisualInfo template;
-  XVisualInfo *list;
-  int n, i;
-
-  template.screen = screen;
-  template.depth = 32;
-  template.class = TrueColor;
-  list = XGetVisualInfo(dpy, VisualScreenMask | VisualDepthMask | VisualClassMask,
-                        &template, &n);
-  if (!list)
-    return 0;
-
-  for (i = 0; i < n; i++) {
-    if (list[i].red_mask && list[i].green_mask && list[i].blue_mask) {
-      *vi_out = list[i];
-      XFree(list);
-      return 1;
-    }
-  }
-  XFree(list);
-  return 0;
-}
-
 /* Make the window ignore pointer events (click-through), unless squish is on */
 static void
 __ToonSetClickThrough(Display *dpy, Window win)
@@ -111,10 +84,9 @@ ToonSetupDrawWindow(void)
 {
   int screen;
   int want_overlay;
-  XVisualInfo vi;
   XSetWindowAttributes swa;
-  Colormap cmap;
   Window overlay;
+  int event_base, error_base;
 
   toon_draw_window = toon_root;
   toon_overlay_mode = 0;
@@ -141,20 +113,19 @@ ToonSetupDrawWindow(void)
     return 0;
   }
 
-  if (!__ToonFindArgbVisual(toon_display, screen, &vi)) {
-    snprintf(toon_message, TOON_MESSAGE_LENGTH,
-             _("No ARGB visual; falling back to classic root drawing"));
-    return -1;
-  }
-
-  cmap = XCreateColormap(toon_display, RootWindow(toon_display, screen),
-                       vi.visual, AllocNone);
-
-  swa.colormap = cmap;
-  swa.background_pixel = 0; /* fully transparent */
-  swa.border_pixel = 0;
+  /*
+   * Use the *default* visual/depth (same as normal clients), not ARGB.
+   * ARGB + Xpm left alpha at 0 or failed to show under several
+   * compositors.  Transparency comes from XShape on the bounding
+   * region (updated each frame to the toon masks).
+   */
+  swa.background_pixel = BlackPixel(toon_display, screen);
+  swa.border_pixel = BlackPixel(toon_display, screen);
   swa.override_redirect = True;
   swa.event_mask = toon_squish ? ButtonPressMask : 0;
+  swa.colormap = DefaultColormap(toon_display, screen);
+  swa.backing_store = NotUseful;
+  swa.save_under = False;
 
   overlay = XCreateWindow(toon_display,
                           RootWindow(toon_display, screen),
@@ -162,11 +133,11 @@ ToonSetupDrawWindow(void)
                           (unsigned) toon_display_width,
                           (unsigned) toon_display_height,
                           0,
-                          vi.depth,
+                          CopyFromParent,
                           InputOutput,
-                          vi.visual,
-                          CWColormap | CWBackPixel | CWBorderPixel |
-                          CWOverrideRedirect | CWEventMask,
+                          CopyFromParent,
+                          CWBackPixel | CWBorderPixel | CWOverrideRedirect |
+                          CWEventMask | CWColormap | CWBackingStore | CWSaveUnder,
                           &swa);
   if (!overlay) {
     snprintf(toon_message, TOON_MESSAGE_LENGTH,
@@ -174,24 +145,26 @@ ToonSetupDrawWindow(void)
     return -1;
   }
 
-  /* Do not set _NET_WM_WINDOW_TYPE_DESKTOP: on many compositors that
-   * places the window under the wallpaper so the toons are never seen.
-   * Override-redirect + LowerWindow keeps us above the root and under
-   * normal clients. */
+  /* Fully invisible until ToonDraw sets ShapeBounding to the toon masks */
+  if (XShapeQueryExtension(toon_display, &event_base, &error_base)) {
+    XShapeCombineRectangles(toon_display, overlay, ShapeBounding,
+                            0, 0, NULL, 0, ShapeSet, Unsorted);
+  }
 
   __ToonSetClickThrough(toon_display, overlay);
 
   XMapWindow(toon_display, overlay);
-  XLowerWindow(toon_display, overlay);
+  /* Keep above the wallpaper; still below normal managed windows is
+   * best-effort — raise so the toons are at least visible. */
+  XRaiseWindow(toon_display, overlay);
   XFlush(toon_display);
 
   toon_draw_window = overlay;
   toon_overlay_mode = 1;
   snprintf(toon_message, TOON_MESSAGE_LENGTH,
-           _("Using transparent overlay window (compositor mode)"));
+           _("Using shaped overlay window (compositor mode)"));
   return 0;
 }
-
 
 
 /* Resize overlay (and refresh display metrics) if the desktop size changed */
@@ -418,48 +391,6 @@ ToonConfigure(unsigned long int code)
 }
 
 
-/* Xpm fills RGB but leaves the alpha channel as 0 on 32-bit visuals.
- * Compositors then treat every pixel as fully transparent. Set alpha to
- * opaque for every pixel that is solid according to the clip mask (or
- * for the entire pixmap if there is no mask). */
-static void
-__ToonForceOpaqueAlpha(Pixmap pixmap, Pixmap mask, unsigned int width,
-                       unsigned int height, unsigned long alpha_bits)
-{
-  XImage *img;
-  XImage *msk = NULL;
-  unsigned int x, y;
-
-  if (!alpha_bits || width == 0 || height == 0)
-    return;
-
-  img = XGetImage(toon_display, pixmap, 0, 0, width, height, AllPlanes, ZPixmap);
-  if (!img)
-    return;
-
-  if (mask)
-    msk = XGetImage(toon_display, mask, 0, 0, width, height, AllPlanes, ZPixmap);
-
-  for (y = 0; y < height; y++) {
-    for (x = 0; x < width; x++) {
-      int solid = 1;
-      if (msk) {
-        /* 1-bit masks: non-zero means solid */
-        solid = XGetPixel(msk, x, y) != 0;
-      }
-      if (solid) {
-        unsigned long p = XGetPixel(img, x, y);
-        XPutPixel(img, x, y, p | alpha_bits);
-      }
-    }
-  }
-
-  XPutImage(toon_display, pixmap, toon_drawGC, img, 0, 0, 0, 0, width, height);
-  XDestroyImage(img);
-  if (msk)
-    XDestroyImage(msk);
-}
-
 /* Store the pixmaps to the server */
 /* Returns 0 on success, otherwise the return value from the Xpm function */
 int
@@ -496,20 +427,6 @@ ToonInstallData(ToonData **data, int ngenera, int ntypes)
 				     &(d->mask),
 				     &attributes))) {
 	  return status;
-	}
-	if (wa.depth >= 32) {
-	  unsigned long alpha_bits =
-	    ~(wa.visual->red_mask | wa.visual->green_mask | wa.visual->blue_mask);
-	  /* Keep only bits that fit the depth (typically 0xff000000) */
-	  if (wa.depth < 32)
-	    alpha_bits &= (1UL << wa.depth) - 1;
-	  else
-	    alpha_bits &= 0xffffffffUL;
-	  if (alpha_bits) {
-	    unsigned int pw = d->width * d->nframes;
-	    unsigned int ph = d->height * (d->ndirections ? d->ndirections : 1);
-	    __ToonForceOpaqueAlpha(d->pixmap, d->mask, pw, ph, alpha_bits);
-	  }
 	}
       }
     }

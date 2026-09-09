@@ -16,8 +16,69 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 #include <stdio.h>
+#include <X11/extensions/shape.h>
 #include "toon.h"
-/* DRAWING FUNCTIONS */
+
+/* Rebuild ShapeBounding so only toon pixels are visible (overlay mode). */
+static void
+__ToonUpdateOverlayShape(Toon *t, int n)
+{
+  int i;
+  int event_base, error_base;
+
+  if (!toon_overlay_mode || !toon_draw_window)
+    return;
+  if (!XShapeQueryExtension(toon_display, &event_base, &error_base))
+    return;
+
+  /* Start from an empty bounding region (fully transparent / not shown) */
+  XShapeCombineRectangles(toon_display, toon_draw_window, ShapeBounding,
+                          0, 0, NULL, 0, ShapeSet, Unsorted);
+
+  for (i = 0; i < n; i++) {
+    Toon *toon = t + i;
+    ToonData *data;
+    int direction;
+    unsigned int width, height;
+    int src_x, src_y;
+    Pixmap frame_mask;
+    GC mask_gc;
+
+    if (!toon->mapped)
+      continue;
+
+    data = toon_data[toon->genus] + toon->type;
+    width = data->width;
+    height = data->height;
+    direction = toon->direction;
+    if (direction >= (int) data->ndirections)
+      direction = 0;
+    src_x = (int) width * toon->frame;
+    src_y = (int) height * direction;
+
+    if (data->mask == None) {
+      XRectangle rect;
+      rect.x = toon->x_map;
+      rect.y = toon->y_map;
+      rect.width = toon->width_map;
+      rect.height = toon->height_map;
+      XShapeCombineRectangles(toon_display, toon_draw_window, ShapeBounding,
+                              0, 0, &rect, 1, ShapeUnion, Unsorted);
+      continue;
+    }
+
+    frame_mask = XCreatePixmap(toon_display, toon_draw_window, width, height, 1);
+    mask_gc = XCreateGC(toon_display, frame_mask, 0, NULL);
+    XSetForeground(toon_display, mask_gc, 0);
+    XFillRectangle(toon_display, frame_mask, mask_gc, 0, 0, width, height);
+    XCopyPlane(toon_display, data->mask, frame_mask, mask_gc,
+               src_x, src_y, width, height, 0, 0, 1);
+    XShapeCombineMask(toon_display, toon_draw_window, ShapeBounding,
+                      toon->x_map, toon->y_map, frame_mask, ShapeUnion);
+    XFreeGC(toon_display, mask_gc);
+    XFreePixmap(toon_display, frame_mask);
+  }
+}
 
 /* Draw the toons from toon[0] to toon[n-1] */
 /* Currently always returns 0 */
@@ -52,6 +113,12 @@ ToonDraw(Toon *t, int n)
       t->mapped = 0;
     }
   }
+
+  if (toon_overlay_mode) {
+    /* Reshape so only toon pixels are visible on the compositor */
+    __ToonUpdateOverlayShape(t - n, n);
+  }
+
   return 0;
 }
 
@@ -78,7 +145,7 @@ ToonErase(Toon *t, int n)
       int height = t->height_map;
       XClearArea(toon_display, toon_draw_window, x, y,
 		 width, height, False);
-      if (toon_expose) {
+      if (toon_expose && !toon_overlay_mode) {
 	if (x < minx) {
 	  minx = x;
 	}
@@ -95,37 +162,34 @@ ToonErase(Toon *t, int n)
     }
   }
 
-  if (toon_expose && count > 100
-      && maxx > minx && maxy > miny) {
-    XExposeEvent event;
-
-    event.type        = Expose;
-    event.send_event  = True;
-    event.display     = toon_display;
-    event.window      = toon_root;
-    event.x           = minx;
-    event.y           = miny;
-    event.width       = maxx-minx + 1;
-    event.height      = maxy-miny + 1;
-    XSendEvent(toon_display, toon_root, True, Expose,
-	       (XEvent *) &event);
-    minx = 10000;
-    maxx = 0;
-    miny = 10000;
-    maxy = 0;
-    count = 0;
+  if (toon_expose && !toon_overlay_mode) {
+    count++;
+    if (count >= 100 && maxx > minx && maxy > miny) {
+      XExposeEvent event;
+      event.type         = Expose;
+      event.serial       = 0;
+      event.send_event   = True;
+      event.display      = toon_display;
+      event.window       = toon_root;
+      event.x            = minx;
+      event.y            = miny;
+      event.width        = maxx - minx;
+      event.height       = maxy - miny;
+      event.count        = 0;
+      XSendEvent(toon_display, toon_root, True, ExposureMask,
+		 (XEvent *) &event);
+      count = 0;
+      minx = 10000;
+      maxx = 0;
+      miny = 10000;
+      maxy = 0;
+    }
   }
-  else {
-    ++count;
-  }
-
   return 0;
 }
 
-/* Send any buffered X calls immediately */
 void
 ToonFlush()
 {
   XFlush(toon_display);
-  return;
 }

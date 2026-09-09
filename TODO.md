@@ -61,6 +61,7 @@ tarball and applied four small patches.
       overlay visual/colormap/depth)
 - [x] Force opaque alpha on ARGB Xpm pixmaps so compositors show toons
 - [x] Avoid _NET_WM_WINDOW_TYPE_DESKTOP (can hide under wallpaper)
+- [x] Switch overlay to default-depth + XShape (ARGB was invisible)
 
 ### In progress / next
 

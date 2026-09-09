@@ -17,9 +17,10 @@
  */
 
 #include <X11/Xlib.h>
-#include <X11/Xos.h>
 #include <X11/xpm.h>
 #include <X11/extensions/shape.h>
+#include <string.h>
+#include <unistd.h>
 
 #define _(string) string
 

@@ -89,7 +89,6 @@ main (int argc, char **argv)
   char list_themes = 0;
   char describe_theme = 0;
   char ignore_popups = 0;
-  char rectangular_windows = 0;
   char load_message = 0;
   char all_themes = 0;
 
@@ -145,7 +144,7 @@ main (int argc, char **argv)
       ignore_popups = 1;
     }
     else if (ArgumentIs("-r", "-rectwin")) {
-      rectangular_windows = 1;
+      ToonConfigure(TOON_NOSHAPEDWINDOWS);
     }
     else if (ArgumentIs("-h", "-help")) {
       fprintf(stdout, _("XPenguins %s (%s) by %s\n"),
@@ -215,7 +214,7 @@ main (int argc, char **argv)
     else if (LongArgumentIs("-id")) {
       if (argc > ++n) {
 	Window id;
-	if (sscanf(argv[n], "%li", &id)) {
+	if (sscanf(argv[n], "%lu", &id) == 1) {
 	  ToonSetRoot(id);
 	}
 	else {

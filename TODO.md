@@ -68,6 +68,13 @@ tarball and applied four small patches.
 - [x] Remove Autotools files (Makefile.am, configure.in, spec.in)
 - [x] INSTALL documents CMake only
 
+### Done (continued)
+
+- [x] Rename README to README.md
+- [x] Wire -r/--rectwin to TOON_NOSHAPEDWINDOWS (was a no-op)
+- [x] Fix Window sscanf format; drop Xos.h; include time.h
+- [x] Document --overlay in man page
+
 ### In progress / next
 
 - [ ] Runtime testing under real compositors (picom, Mutter, KWin)

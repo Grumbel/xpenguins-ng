@@ -16,6 +16,7 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 #include <stdio.h>
+#include <time.h>
 #include <stdlib.h>
 #include "xpenguins.h"
 
@@ -658,7 +659,6 @@ xpenguins_frame()
 void
 xpenguins_exit()
 {
-  //  ToonErase(penguin, penguin_number);
   ToonCloseDisplay();
   xpenguins_active = 0;
 }

@@ -114,6 +114,16 @@ pseudo file (probably just Linux). When there are no toons on the screen,
 .I XPenguins
 uses only a miniscule amount of CPU time - it just wakes up every 5
 seconds to recheck the load.
+.TP
+.B "\-\-overlay"
+Force the transparent shaped overlay drawing path (for compositing
+window managers). By default this path is selected automatically when
+a compositing manager is detected.
+.TP
+.B "\-\-no\-overlay, \-\-root"
+Force classic drawing on the desktop/root window even if a compositor
+is running.
+
 .SH THEMES
 The system themes are usually kept in
 .IR /usr/share/xpenguins/themes ", "

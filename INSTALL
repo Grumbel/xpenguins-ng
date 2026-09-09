@@ -20,4 +20,4 @@ Or with Nix:
   nix build
   nix run
 
-See README for runtime options (overlay vs classic drawing).
+See README.md for runtime options (overlay vs classic drawing).

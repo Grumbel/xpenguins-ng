@@ -52,7 +52,7 @@ adjacent frames.
 | `--debug` | Window-map / spawn diagnostics on stderr |
 
 System themes: `share/xpenguins-ng/themes/`  
-User themes: `~/.xpenguins-ng/themes/`
+User themes: `$XDG_DATA_HOME/xpenguins-ng/themes` (default `~/.local/share/xpenguins-ng/themes`; legacy `~/.xpenguins(-ng)/themes` still searched)
 
 ## Installation
 

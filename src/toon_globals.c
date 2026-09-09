@@ -63,4 +63,6 @@ int toon_button_y = -1;
 char toon_expose;
 char toon_squish = 0;
 char toon_debug = 0;
+int (*toon_event_hook)(XEvent *event) = 0;
+char toon_exit_requested = 0;
 Window toon_squish_window = (Window) 0;

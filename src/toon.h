@@ -166,6 +166,9 @@ extern int toon_button_y;
 extern char toon_expose;
 extern char toon_squish;
 extern char toon_debug;
+/* Optional: return non-zero to request app exit (e.g. tray click) */
+extern int (*toon_event_hook)(XEvent *event);
+extern char toon_exit_requested;
 extern Window toon_squish_window;
 
 /*** FUNCTION PROTOTYPES ***/

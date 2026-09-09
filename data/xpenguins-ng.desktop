@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=xpenguins-ng
+GenericName=Desktop penguins
+Comment=Animated penguins that walk on your windows
+Exec=xpenguins-ng
+Icon=xpenguins-ng
+Terminal=false
+Categories=Game;Amusement;
+Keywords=penguins;desktop;x11;
+StartupNotify=false

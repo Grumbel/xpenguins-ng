@@ -35,6 +35,37 @@
 char *xpenguins_directory = XPENGUINS_SYSTEM_DIRECTORY;
 char xpenguins_verbose = 1;
 
+const char *
+xpenguins_user_data_dir(void)
+{
+  static char buf[512];
+  const char *xdg = getenv("XDG_DATA_HOME");
+  const char *home;
+
+  if (xdg && xdg[0]) {
+    snprintf(buf, sizeof(buf), "%s/xpenguins-ng", xdg);
+    return buf;
+  }
+  home = getenv("HOME");
+  if (!home || !home[0])
+    return NULL;
+  snprintf(buf, sizeof(buf), "%s/.local/share/xpenguins-ng", home);
+  return buf;
+}
+
+static void
+__xpenguins_legacy_user_theme_roots(char *out0, size_t n0,
+				    char *out1, size_t n1)
+{
+  const char *home = getenv("HOME");
+  out0[0] = out1[0] = '\0';
+  if (!home || !home[0])
+    return;
+  snprintf(out0, n0, "%s/.xpenguins-ng", home);
+  snprintf(out1, n1, "%s/.xpenguins", home);
+}
+
+
 #define MAX_STRING_LENGTH 513
 
 /* Print a warning message */
@@ -154,8 +185,8 @@ xpenguins_remove_underscores(char *name)
 char **
 xpenguins_list_themes(int *nthemes)
 {
-  char *home = getenv("HOME");
-  char *home_root = XPENGUINS_USER_DIRECTORY;
+  const char *user_data = xpenguins_user_data_dir();
+  char legacy0[512], legacy1[512];
   char *themes = XPENGUINS_THEME_DIRECTORY;
   char *config = XPENGUINS_CONFIG;
   char *config_path, *tmp_path;
@@ -165,39 +196,56 @@ xpenguins_list_themes(int *nthemes)
   int i, string_length = 0;
   glob_t globbuf;
   int n = 0;
+  int have_matches = 0;
 
-  /* First add themes from the users home directory */
-  string_length = strlen(home) + strlen(home_root)
-    + strlen(themes) + 2 + strlen(config) + 1;
-  config_path = malloc(string_length);
-  if (!config_path) {
-    xpenguins_out_of_memory();
-    return NULL;
-  }
-  snprintf(config_path, string_length, "%s%s%s/*%s",
-	   home, home_root, themes, config);
-  if (glob(config_path, 0, NULL, &globbuf) == GLOB_NOSPACE) {
-    free(config_path);
-    xpenguins_out_of_memory();
-    return NULL;
+  memset(&globbuf, 0, sizeof(globbuf));
+  __xpenguins_legacy_user_theme_roots(legacy0, sizeof(legacy0),
+				      legacy1, sizeof(legacy1));
+
+  /* User themes: XDG, then legacy ~/.xpenguins-ng and ~/.xpenguins */
+  {
+    const char *roots[3];
+    int r;
+    roots[0] = user_data;
+    roots[1] = legacy0[0] ? legacy0 : NULL;
+    roots[2] = legacy1[0] ? legacy1 : NULL;
+    for (r = 0; r < 3; r++) {
+      if (!roots[r])
+	continue;
+      string_length = (int) strlen(roots[r]) + (int) strlen(themes)
+	+ 2 + (int) strlen(config) + 1;
+      config_path = malloc((size_t) string_length);
+      if (!config_path) {
+	xpenguins_out_of_memory();
+	return NULL;
+      }
+      snprintf(config_path, (size_t) string_length, "%s%s/*%s",
+	       roots[r], themes, config);
+      if (glob(config_path, have_matches ? GLOB_APPEND : 0, NULL, &globbuf)
+	  == GLOB_NOSPACE) {
+	free(config_path);
+	xpenguins_out_of_memory();
+	return NULL;
+      }
+      free(config_path);
+      if (globbuf.gl_pathc)
+	have_matches = 1;
+    }
   }
 
   /* Then add system themes */
-  string_length = strlen(xpenguins_directory) + strlen(themes) + 2
-    + strlen(config) + 1;
-  tmp_path = realloc(config_path, string_length);
-  if (!tmp_path) {
+  string_length = (int) strlen(xpenguins_directory) + (int) strlen(themes)
+    + 2 + (int) strlen(config) + 1;
+  config_path = malloc((size_t) string_length);
+  if (!config_path) {
     globfree(&globbuf);
-    free(config_path);
     xpenguins_out_of_memory();
     return NULL;
   }
-  else {
-    config_path = tmp_path;
-  }
-  snprintf(config_path, string_length, "%s%s/*%s",
+  snprintf(config_path, (size_t) string_length, "%s%s/*%s",
 	   xpenguins_directory, themes, config);
-  if (glob(config_path, GLOB_APPEND, NULL, &globbuf) == GLOB_NOSPACE) {
+  if (glob(config_path, have_matches ? GLOB_APPEND : 0, NULL, &globbuf)
+      == GLOB_NOSPACE) {
     free(config_path);
     xpenguins_out_of_memory();
     return NULL;
@@ -335,68 +383,73 @@ xpenguins_free_list(char **list)
 char *
 xpenguins_theme_directory(char *name)
 {
-  char *home = getenv("HOME");
-  char *home_root = XPENGUINS_USER_DIRECTORY;
+  const char *user_data = xpenguins_user_data_dir();
+  char legacy0[512], legacy1[512];
   char *themes = XPENGUINS_THEME_DIRECTORY;
   char *config = XPENGUINS_CONFIG;
-  char *config_path, *tmp_path, *ch;
+  char *config_path = NULL, *tmp_path, *ch;
   int string_length = 0, root_length;
   struct stat stat_buf;
+  const char *roots[3];
+  int r;
 
-  /* First look in $HOME/.xpenguins/themes for config */
-  root_length = strlen(home) + strlen(home_root) + strlen(themes) + 1;
-  string_length = root_length + strlen(name) + strlen(config) + 1;
-  config_path = malloc(string_length);
-  if (!config_path) {
+  __xpenguins_legacy_user_theme_roots(legacy0, sizeof(legacy0),
+				      legacy1, sizeof(legacy1));
+  roots[0] = user_data;
+  roots[1] = legacy0[0] ? legacy0 : NULL;
+  roots[2] = legacy1[0] ? legacy1 : NULL;
+
+  for (r = 0; r < 3; r++) {
+    if (!roots[r])
+      continue;
+    root_length = (int) strlen(roots[r]) + (int) strlen(themes) + 1;
+    string_length = root_length + (int) strlen(name) + (int) strlen(config) + 1;
+    tmp_path = realloc(config_path, (size_t) string_length);
+    if (!tmp_path) {
+      free(config_path);
+      xpenguins_out_of_memory();
+      return NULL;
+    }
+    config_path = tmp_path;
+    snprintf(config_path, (size_t) string_length, "%s%s/%s%s",
+	     roots[r], themes, name, config);
+    ch = config_path + root_length;
+    while (*ch != '/') {
+      if (*ch == ' ')
+	*ch = '_';
+      ++ch;
+    }
+    if (stat(config_path, &stat_buf) == 0) {
+      config_path[string_length - (int) strlen(config) - 1] = 0;
+      return config_path;
+    }
+  }
+
+  root_length = (int) strlen(xpenguins_directory) + (int) strlen(themes) + 1;
+  string_length = root_length + (int) strlen(name) + (int) strlen(config) + 1;
+  tmp_path = realloc(config_path, (size_t) string_length);
+  if (!tmp_path) {
+    free(config_path);
     xpenguins_out_of_memory();
     return NULL;
   }
-  snprintf(config_path, string_length, "%s%s%s/%s%s",
-	   home, home_root, themes, name, config);
-  /* Convert spaces to underscores */
+  config_path = tmp_path;
+  snprintf(config_path, (size_t) string_length, "%s%s/%s%s",
+	   xpenguins_directory, themes, name, config);
   ch = config_path + root_length;
   while (*ch != '/') {
-    if (*ch == ' ') {
+    if (*ch == ' ')
       *ch = '_';
-    }
     ++ch;
   }
-  /* See if theme exists */
   if (stat(config_path, &stat_buf) == 0) {
-    config_path[string_length-strlen(config)-1] = '\0';
+    config_path[string_length - (int) strlen(config) - 1] = 0;
     return config_path;
   }
-  /* Theme not found in users theme directory... */
-  /* Now look in [xpenguins_directory]/themes for config */
-  root_length = strlen(xpenguins_directory) + strlen(themes) + 1;
-  string_length = root_length + strlen(name) + strlen(config) + 1;
-  tmp_path = realloc(config_path, string_length);
-  if (!tmp_path) {
-    xpenguins_out_of_memory();
-    free(config_path);
-    return NULL;
-  }
-  else {
-    config_path = tmp_path;
-  }
-  snprintf(config_path, string_length, "%s%s/%s%s",
-	   xpenguins_directory, themes, name, config);
-  /* Convert spaces to underscores */
-  ch = config_path + root_length;
-  while (*ch !='/') {
-    if (*ch == ' ') {
-      *ch = '_';
-    }
-    ++ch;
-  }
-  /* Look for theme */
-  if (stat(config_path, &stat_buf) == 0) {
-    config_path[string_length-strlen(config)-1] = '\0';
-    return config_path;
-  }
-  /* Theme not found */
+  free(config_path);
   return NULL;
 }
+
 
 /* Copy select properties from one ToonData structure to another */
 static

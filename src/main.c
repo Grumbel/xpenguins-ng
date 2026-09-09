@@ -97,6 +97,7 @@ main (int argc, char **argv)
   char ignore_popups = 0;
   char load_message = 0;
   char all_themes = 0;
+  char enable_tray = 1;
 
   theme_names = malloc(2 * sizeof(char *));
   theme_names[0] = DEFAULT_THEME;
@@ -210,6 +211,9 @@ main (int argc, char **argv)
     }
     else if (LongArgumentIs("-debug")) {
       toon_debug = 1;
+    }
+    else if (LongArgumentIs("-no-tray")) {
+      enable_tray = 0;
     }
     else if (LongArgumentIs("-overlay")) {
       ToonConfigure(TOON_OVERLAY);
@@ -344,12 +348,18 @@ main (int argc, char **argv)
 
   ToonConfigure(TOON_CATCHSIGNALS);
 
+  if (enable_tray) {
+    toon_event_hook = xpenguins_tray_event;
+    xpenguins_tray_init(toon_display);
+  }
+
+
   /* Main loop */
   while((frames_active = xpenguins_frame()) || !interupts) {
    if (interupts && xpenguins_verbose) {
       fprintf(stderr, ".");
     }
-    if (ToonSignal()) {
+    if (toon_exit_requested || ToonSignal()) {
       if (++interupts > 1) {
 	break;
       }
@@ -399,6 +409,7 @@ main (int argc, char **argv)
   if (xpenguins_verbose) {
     fprintf(stderr, _(" Done.\n"));
   }
+  xpenguins_tray_fini();
   xpenguins_exit();
   exit(0);
 }
@@ -425,7 +436,7 @@ ShowUsage(char **argv)
 	    "  -b, --no-blood                    Do not show any gory images\n"
 	    "  -a, --no-angels                   Do not show any cherubim\n"
 	    "  -s, --squish                      kill penguins with mouse\n"
-	    "      --debug                        window-map / spawn diagnostics\n"
+	    "      --debug                        window-map / spawn diagnostics\n"	    "      --no-tray                      do not show a system tray icon\n"
 	    "      --overlay                     force transparent overlay (compositor)\n"
 	    "      --no-overlay, --root          force classic root-window drawing\n"
 	    "      --all                         Run all available themes simultaneously\n"
@@ -450,9 +461,8 @@ ListThemes()
       config_dir = XPENGUINS_SYSTEM_DIRECTORY;
     }
     else if (xpenguins_verbose) {
-      fprintf(stderr, _("No valid themes found (looked in %s%s and %s%s)\n"),
-	      config_dir, XPENGUINS_THEME_DIRECTORY, getenv("HOME"),
-	      XPENGUINS_USER_DIRECTORY XPENGUINS_THEME_DIRECTORY);
+      fprintf(stderr, _("No valid themes found (looked under system themes and %s/themes)\n"),
+	      xpenguins_user_data_dir() ? xpenguins_user_data_dir() : "(no user data dir)");
     }
   }
   else {

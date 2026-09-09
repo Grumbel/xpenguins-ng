@@ -353,3 +353,18 @@ SPDX-FileCopyrightText = [
 ]
 SPDX-License-Identifier = "GPL-2.0-or-later"
 
+
+[[annotations]]
+path = "data/xpenguins-ng.desktop"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 Ingo Ruhnke <grumbel@gmail.com>"
+SPDX-License-Identifier = "GPL-2.0-or-later"
+
+[[annotations]]
+path = [
+  "data/icons/hicolor/32x32/apps/xpenguins-ng.png",
+  "data/icons/hicolor/48x48/apps/xpenguins-ng.png",
+]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "1999-2001 Robin Hogan <R.J.Hogan@reading.ac.uk>"
+SPDX-License-Identifier = "GPL-2.0-or-later"

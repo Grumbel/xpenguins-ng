@@ -33,6 +33,7 @@ set(XPENGUINS_SOURCES
   src/toon_init.c
   src/toon_root.c
   src/toon_signal.c
+  src/xpenguins_tray.c
 )
 
 add_executable(xpenguins-ng ${XPENGUINS_SOURCES})
@@ -82,3 +83,10 @@ foreach(theme ${THEME_DIRS})
   install(FILES ${theme_files}
     DESTINATION ${CMAKE_INSTALL_DATADIR}/xpenguins-ng/themes/${theme})
 endforeach()
+
+install(FILES data/xpenguins-ng.desktop
+  DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
+install(FILES data/icons/hicolor/48x48/apps/xpenguins-ng.png
+  DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/48x48/apps)
+install(FILES data/icons/hicolor/32x32/apps/xpenguins-ng.png
+  DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/32x32/apps)

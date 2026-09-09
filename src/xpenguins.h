@@ -85,10 +85,6 @@
 #endif
 
 #endif
-#ifndef XPENGUINS_USER_DIRECTORY
-#define XPENGUINS_USER_DIRECTORY "/.xpenguins-ng"
-#endif
-
 #ifndef XPENGUINS_THEME_DIRECTORY
 #define XPENGUINS_THEME_DIRECTORY "/themes"
 #endif
@@ -160,6 +156,12 @@ void xpenguins_exit();
 
 /* Set the data directory to use to find themes */
 void xpenguins_set_directory(char *directory);
+/* XDG data dir for user themes (~/.local/share/xpenguins-ng) */
+const char *xpenguins_user_data_dir(void);
+int xpenguins_tray_init(Display *dpy);
+int xpenguins_tray_event(XEvent *event); /* 1 = user requested exit */
+void xpenguins_tray_fini(void);
+
 
 /* Returns an array of strings the theme names - this list is
  * dynamically allocated so should be freed using

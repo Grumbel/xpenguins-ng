@@ -211,6 +211,12 @@ ToonLocateWindows()
     /* Popup? */
     if ((!toon_solid_popups) && attributes.save_under) continue;
 
+    /* Never treat our own overlay (or squish) window as solid terrain */
+    if (toon_overlay_mode && children[wx] == toon_draw_window)
+      continue;
+    if (toon_squish_window && children[wx] == toon_squish_window)
+      continue;
+
     if (attributes.map_state == IsViewable) {
       /* Geometry of the window, borders inclusive */
 

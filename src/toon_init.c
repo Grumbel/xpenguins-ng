@@ -20,10 +20,188 @@
 #include <string.h>
 #include <stdio.h>
 #include <X11/cursorfont.h>
+#include <X11/Xatom.h>
+#include <X11/Xutil.h>
+#include <X11/extensions/shape.h>
+#ifdef HAVE_XFIXES
+#include <X11/extensions/Xfixes.h>
+#endif
 #include "toon.h"
 
 
 /* STARTUP FUNCTIONS */
+
+/* Return 1 if a compositing manager owns _NET_WM_CM_Sn */
+static int
+__ToonCompositorRunning(Display *dpy, int screen)
+{
+  char sel[32];
+  Atom atom;
+  snprintf(sel, sizeof(sel), "_NET_WM_CM_S%d", screen);
+  atom = XInternAtom(dpy, sel, False);
+  return XGetSelectionOwner(dpy, atom) != None;
+}
+
+/* Find a 32-bit TrueColor visual suitable for a transparent overlay */
+static int
+__ToonFindArgbVisual(Display *dpy, int screen, XVisualInfo *vi_out)
+{
+  XVisualInfo template;
+  XVisualInfo *list;
+  int n, i;
+
+  template.screen = screen;
+  template.depth = 32;
+  template.class = TrueColor;
+  list = XGetVisualInfo(dpy, VisualScreenMask | VisualDepthMask | VisualClassMask,
+                        &template, &n);
+  if (!list)
+    return 0;
+
+  for (i = 0; i < n; i++) {
+    if (list[i].red_mask && list[i].green_mask && list[i].blue_mask) {
+      *vi_out = list[i];
+      XFree(list);
+      return 1;
+    }
+  }
+  XFree(list);
+  return 0;
+}
+
+/* Make the window ignore pointer events (click-through), unless squish is on */
+static void
+__ToonSetClickThrough(Display *dpy, Window win)
+{
+  if (toon_squish)
+    return;
+
+#ifdef HAVE_XFIXES
+  {
+    int major = 0, minor = 0, event_base, error_base;
+    if (XFixesQueryExtension(dpy, &event_base, &error_base)) {
+      if (XFixesQueryVersion(dpy, &major, &minor) && major >= 2) {
+        XserverRegion region = XFixesCreateRegion(dpy, NULL, 0);
+        XFixesSetWindowShapeRegion(dpy, win, ShapeInput, 0, 0, region);
+        XFixesDestroyRegion(dpy, region);
+        return;
+      }
+    }
+  }
+#endif
+  /* Fallback: empty ShapeInput via XShape */
+  {
+    int event_base, error_base;
+    if (XShapeQueryExtension(dpy, &event_base, &error_base)) {
+      XShapeCombineRectangles(dpy, win, ShapeInput, 0, 0, NULL, 0,
+                              ShapeSet, Unsorted);
+    }
+  }
+}
+
+/*
+ * Choose the drawable used for toon pixels.
+ * Classic path: draw on toon_root (desktop / virtual root).
+ * Overlay path: full-screen override-redirect ARGB window (compositor-friendly).
+ * Returns 0 on success, -1 if overlay was requested but could not be created
+ * (falls back to classic).
+ */
+int
+ToonSetupDrawWindow(void)
+{
+  int screen;
+  int want_overlay;
+  XVisualInfo vi;
+  XSetWindowAttributes swa;
+  Colormap cmap;
+  Window overlay;
+  Atom opacity_atom;
+  unsigned long opacity;
+
+  toon_draw_window = toon_root;
+  toon_overlay_mode = 0;
+
+  screen = DefaultScreen(toon_display);
+
+  /* --id forces classic drawing on the given window */
+  if (toon_root_override) {
+    snprintf(toon_message, TOON_MESSAGE_LENGTH,
+             _("Drawing on user-specified window (classic path)"));
+    return 0;
+  }
+
+  if (toon_overlay_preference > 0)
+    want_overlay = 1;
+  else if (toon_overlay_preference == 0)
+    want_overlay = 0;
+  else
+    want_overlay = __ToonCompositorRunning(toon_display, screen);
+
+  if (!want_overlay) {
+    snprintf(toon_message, TOON_MESSAGE_LENGTH,
+             _("Drawing on desktop window (classic path)"));
+    return 0;
+  }
+
+  if (!__ToonFindArgbVisual(toon_display, screen, &vi)) {
+    snprintf(toon_message, TOON_MESSAGE_LENGTH,
+             _("No ARGB visual; falling back to classic root drawing"));
+    return -1;
+  }
+
+  cmap = XCreateColormap(toon_display, RootWindow(toon_display, screen),
+                       vi.visual, AllocNone);
+
+  swa.colormap = cmap;
+  swa.background_pixel = 0; /* fully transparent */
+  swa.border_pixel = 0;
+  swa.override_redirect = True;
+  swa.event_mask = toon_squish ? ButtonPressMask : 0;
+
+  overlay = XCreateWindow(toon_display,
+                          RootWindow(toon_display, screen),
+                          0, 0,
+                          (unsigned) toon_display_width,
+                          (unsigned) toon_display_height,
+                          0,
+                          vi.depth,
+                          InputOutput,
+                          vi.visual,
+                          CWColormap | CWBackPixel | CWBorderPixel |
+                          CWOverrideRedirect | CWEventMask,
+                          &swa);
+  if (!overlay) {
+    snprintf(toon_message, TOON_MESSAGE_LENGTH,
+             _("Failed to create overlay window; using classic path"));
+    return -1;
+  }
+
+  /* Hint compositors this is a desktop/background surface */
+  {
+    Atom type = XInternAtom(toon_display, "_NET_WM_WINDOW_TYPE", False);
+    Atom desktop = XInternAtom(toon_display, "_NET_WM_WINDOW_TYPE_DESKTOP", False);
+    XChangeProperty(toon_display, overlay, type, XA_ATOM, 32,
+                    PropModeReplace, (unsigned char *) &desktop, 1);
+  }
+
+  opacity_atom = XInternAtom(toon_display, "_NET_WM_WINDOW_OPACITY", False);
+  opacity = 0xffffffffUL;
+  XChangeProperty(toon_display, overlay, opacity_atom, XA_CARDINAL, 32,
+                  PropModeReplace, (unsigned char *) &opacity, 1);
+
+  __ToonSetClickThrough(toon_display, overlay);
+
+  XLowerWindow(toon_display, overlay);
+  XMapWindow(toon_display, overlay);
+  XFlush(toon_display);
+
+  toon_draw_window = overlay;
+  toon_overlay_mode = 1;
+  snprintf(toon_message, TOON_MESSAGE_LENGTH,
+           _("Using transparent overlay window (compositor mode)"));
+  return 0;
+}
+
 
 /* Open display */
 Display *
@@ -74,9 +252,14 @@ ToonInit(Display *d)
     toon_y_offset = attributes.y;
   }
 
+  /* Choose classic root drawing or a transparent overlay window */
+  ToonSetupDrawWindow();
+
   /* If we want to squish the toons with the mouse then we must create
-   * a window over the root window that has the same properties */
-  if (toon_squish) {
+   * a window over the root window that has the same properties.
+   * In overlay mode with squish, ButtonPress is selected on the overlay
+   * itself, so no extra InputOnly window is needed. */
+  if (toon_squish && !toon_overlay_mode) {
     XSetWindowAttributes squish_att;
     squish_att.event_mask = ButtonPressMask;
     squish_att.override_redirect = True;
@@ -114,7 +297,7 @@ ToonInit(Display *d)
   gc_values.function = GXcopy;
   gc_values.graphics_exposures = False;
   gc_values.fill_style = FillTiled;
-  toon_drawGC = XCreateGC(toon_display, toon_root,
+  toon_drawGC = XCreateGC(toon_display, toon_draw_window,
 			  GCFunction | GCFillStyle | GCGraphicsExposures,
 			  &gc_values);
 
@@ -191,6 +374,13 @@ ToonConfigure(unsigned long int code)
     toon_squish = 0;
   }
 
+  if (code & TOON_OVERLAY) {
+    toon_overlay_preference = 1;
+  }
+  else if (code & TOON_NOOVERLAY) {
+    toon_overlay_preference = 0;
+  }
+
   return 0;
 }
 
@@ -211,7 +401,7 @@ ToonInstallData(ToonData **data, int ngenera, int ntypes)
       ToonData *d = data[i]+j;
       if (d->exists && !d->master) {
 	if ((status =
-	     XpmCreatePixmapFromData(toon_display, toon_root,
+	     XpmCreatePixmapFromData(toon_display, toon_draw_window,
 				     d->image,
 				     &(d->pixmap), 
 				     &(d->mask), 

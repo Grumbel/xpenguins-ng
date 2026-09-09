@@ -39,7 +39,7 @@ ToonDraw(Toon *t, int n)
 		     t->x-width*t->frame, t->y-height*direction); 
       XSetClipMask(toon_display, toon_drawGC, data->mask);   
       XCopyArea(toon_display, data->pixmap,
-		toon_root,toon_drawGC,width*t->frame,height*direction,
+		toon_draw_window,toon_drawGC,width*t->frame,height*direction,
 		width,height,t->x,t->y);
       XSetClipMask(toon_display, toon_drawGC, None);
       t->x_map = t->x;
@@ -76,7 +76,7 @@ ToonErase(Toon *t, int n)
       int y = t->y_map;
       int width = t->width_map;
       int height = t->height_map;
-      XClearArea(toon_display, toon_root, x, y,
+      XClearArea(toon_display, toon_draw_window, x, y,
 		 width, height, False);
       if (toon_expose) {
 	if (x < minx) {

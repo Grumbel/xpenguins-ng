@@ -30,18 +30,20 @@ ToonFinishUp()
     XDestroyRegion(toon_windows);
     toon_windows = NULL;
   }
-  XClearWindow(toon_display,toon_root);
-  /* Send an expose event so that any apps that draw to the window can
-     redraw them */
-  event.type = Expose;
-  event.send_event = True;
-  event.display = toon_display;
-  event.window = toon_root;
-  event.x = 0;
-  event.y = 0;
-  event.width = toon_display_width;
-  event.height = toon_display_height;
-  XSendEvent(toon_display, toon_root, False, Expose, (XEvent *) &event);
+  if (toon_draw_window)
+    XClearWindow(toon_display, toon_draw_window);
+  /* When drawing on the desktop root, send expose so icons redraw */
+  if (!toon_overlay_mode) {
+    event.type = Expose;
+    event.send_event = True;
+    event.display = toon_display;
+    event.window = toon_root;
+    event.x = 0;
+    event.y = 0;
+    event.width = toon_display_width;
+    event.height = toon_display_height;
+    XSendEvent(toon_display, toon_root, False, Expose, (XEvent *) &event);
+  }
 
   ToonFreeData();
   if (toon_drawGC) {
@@ -56,6 +58,12 @@ ToonFinishUp()
   if (toon_squish_window) {
     XDestroyWindow(toon_display, toon_squish_window);
     toon_squish_window = (Window) 0;
+  }
+
+  if (toon_overlay_mode && toon_draw_window) {
+    XDestroyWindow(toon_display, toon_draw_window);
+    toon_draw_window = 0;
+    toon_overlay_mode = 0;
   }
 
   return 0;

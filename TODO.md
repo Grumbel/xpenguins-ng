@@ -63,6 +63,11 @@ tarball and applied four small patches.
 - [x] Avoid _NET_WM_WINDOW_TYPE_DESKTOP (can hide under wallpaper)
 - [x] Switch overlay to default-depth + XShape (ARGB was invisible)
 
+### Done (continued)
+
+- [x] Remove Autotools files (Makefile.am, configure.in, spec.in)
+- [x] INSTALL documents CMake only
+
 ### In progress / next
 
 - [ ] Runtime testing under real compositors (picom, Mutter, KWin)

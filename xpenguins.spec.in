@@ -1,0 +1,63 @@
+%define name xpenguins
+%define version @VERSION@
+%define release 1
+
+Summary: Cute little penguins that walk along the tops of your windows
+Name: %{name}
+Version: %{version}
+Release: %{release}
+Copyright: GPL
+Source0: %{name}-%{version}.tar.gz
+Group: Amusements/Graphics
+BuildRoot: %{_tmppath}/%{name}-buildroot
+Packager: Robin Hogan <R.J.Hogan@reading.ac.uk>
+URL: http://xpenguins.seul.org/
+Prefix: %{_prefix}
+
+%description
+XPenguins animates a friendly family of penguins in your root window.
+They drop in from the top of the screen, walk along the tops of your
+windows, up the side of your windows, levitate, skateboard, and do
+other similarly exciting things. XPenguins is now themeable so if
+you're bored of penguins, try something else. The themes that come
+with this package are "Penguins", "Classic Penguins", "Big Penguins",
+"Turtles" and "Bill".
+
+%prep
+%setup
+
+%build
+# Note: when we compile the program it needs to know where the 
+# data will be when finally installed.
+CFLAGS="$RPM_OPT_FLAGS" ./configure --datadir="%{prefix}/share"
+make
+
+%install
+%makeinstall "prefix=$RPM_OPT_FLAGS/${prefix}"
+
+%clean
+rm -rf $RPM_BUILD_ROOT
+
+%files
+%defattr(-,root,root)
+%doc README AUTHORS COPYING ChangeLog lay-out-frames.scm resize-frames.scm
+%attr(755,root,root) %{_bindir}/xpenguins
+%{_mandir}/man1/*
+%{_datadir}/%{name}/themes/Penguins/*
+%{_datadir}/%{name}/themes/Big_Penguins/*
+%{_datadir}/%{name}/themes/Classic_Penguins/*
+%{_datadir}/%{name}/themes/Turtles/*
+%{_datadir}/%{name}/themes/Bill/*
+
+%changelog
+* Mon Oct  1 2001 Robin Hogan <R.J.Hogan@reading.ac.uk> 2.1.5-1
+- Removed Lemmings (now in xpenguins_themes), added Bill, Big Penguins
+- Added resize-frames.scm to docs
+* Wed Aug 22 2001 Robin Hogan <R.J.Hogan@reading.ac.uk> 2.1.3-1
+- Added Lemmings theme
+* Sat May  5 2001 Robin Hogan <R.J.Hogan@reading.ac.uk> 1.9.1-1
+- First spec file used with autoconf
+* Tue May 23 2000 Robin Hogan <R.J.Hogan@reading.ac.uk> 1.2-1
+- Use BuildRoot.
+
+# end of file

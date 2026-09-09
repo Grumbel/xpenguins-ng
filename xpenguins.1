@@ -1,0 +1,377 @@
+.TH XPenguins 1 "1 October 2001" "XPenguins 2.2"
+.SH NAME
+xpenguins \- cute little penguins that walk along the tops of your windows
+.SH SYNOPSIS
+.B xpenguins
+[-option ...]
+.SH DESCRIPTION
+.IR XPenguins
+is a program for animating cute cartoons/animals in your root window.
+By default it will be penguins - they drop in from the top of the
+screen, walk along the tops of your windows, up the side of your
+windows, levitate, skateboard, and do other similarly exciting
+things. Be careful when you move windows as the little guys squash
+easily. If you send the program an interupt signal (such as by
+hitting Ctrl-C) they will burst.
+.I XPenguins
+is now themeable, so it is easy to select something else to animate
+instead of penguins, or even (with a little artistic talent) define
+your own; see the
+.B THEMES
+section below.
+.SH OPTIONS
+In all the following cases a double dash can be replaced by a single
+dash.
+.TP 8
+.B "\-a, \-\-no\-angels"
+Do not show any cherubim flying up to heaven when a toon gets
+squashed.
+.TP 8
+.B "\-b, \-\-no\-blood"
+Do not show any gory death sequences.
+.TP 8
+.BI "\-c " dir ", \-\-config\-dir " dir
+Look for config files and themes in this directory. The default is
+usually
+.IR /usr/share/xpenguins "."
+.TP 8
+.BI "\-d " display ", \-\-display " display
+Send the toons to the specified X display. In the absence of this
+option, the display specified by the
+.B DISPLAY
+environment variable is used. 
+.TP 8
+.B "\-h, \-\-help"
+Print out a message describing the available options.
+.TP 8
+.TP 8
+.B "\-i, \-\-theme\-info"
+Print out the auxiliary information about a theme and exit. Use the
+.B "\-t"
+option to select the theme to describe.
+.TP 8
+.B "\-l, \-\-list\-themes"
+List the available themes, one on each line, and exit.
+.TP 8
+.BI "\-m " delay ", \-\-delay " delay
+Set the delay between each frame in milliseconds. The default is defined
+by the theme.
+.TP 8
+.BI "\-n " number ", \-\-penguins " number
+The number of toons to start, up to a maximum of 256. The default
+is defined by the theme.
+.TP 8
+.B "\-p, \-\-ignorepopups"
+Toons fall through `popup' windows (those with the save-under
+attribute set), such as tooltips. Note that this also includes the KDE
+panel.
+.TP 8
+.B "\-r, \-\-rectwin"
+Toons regard all windows as rectangular. This option results in
+faster calculation of window positions, but if you use one of those
+fancy new window managers with shaped windows then your toons
+might sometimes look like they're walking on thin air.
+.TP 8
+.B "\-s, \-\-squish"
+Enable the penguins to be squished using any of the mouse
+buttons. Note that this disables any existing function of the mouse
+buttons on the root window.
+.TP 8
+.BI "\-t " theme ", \-\-theme " theme
+Use the named theme. The default is
+.BR Penguins "."
+If the theme has spaces in its name then you can use underscores
+instead, or alternatively just put the name in double quotes. This
+option can be called multiple times to run several themes
+simultaneously.
+.TP 8
+.B  "\-q, --quiet"
+Suppress the exit message when an interupt is received.
+.TP 8
+.B "\-v, \-\-version"
+Print out the current version number and quit.
+.TP 8
+.B "\-\-all"
+Load all available themes and run them simultaneously.
+.TP 8
+.BI "\-\-id " "window"
+Send toons to the window with this ID, instead of the root window or
+whichever window is appropriate for the current desktop environment. Note that
+the ID of X clients reported by
+.I xwininfo
+is rarely that of the foremost visible window that should be used here.
+.TP 8
+.BI "\-\-nice " "loadaverage1 loadaverage2"
+Start killing toons when the 1-min averaged system load exceeds
+.IR loadaverage1 ";"
+when it exceeds
+.I loadaverage2
+kill them all. The toons will reappear when the load average comes
+down. The load is checked every 5 seconds by looking in
+.IR /proc/loadavg ","
+so this option only works under unices that implement this particular
+pseudo file (probably just Linux). When there are no toons on the screen,
+.I XPenguins
+uses only a miniscule amount of CPU time - it just wakes up every 5
+seconds to recheck the load.
+.SH THEMES
+The system themes are usually kept in
+.IR /usr/share/xpenguins/themes ", "
+and these can be augmented or overridden by the user's themes in
+.IR $HOME/.xpenguins/themes "."
+Each theme has its own subdirectory which to be valid must contain a
+file called
+.IR config "."
+The name of the theme is taken from the directory name, although
+because many install scripts choke on directory names containing
+spaces, all spaces in a theme name are represented in the directory
+name by underscores. Any directory name containing spaces is
+inaccessible by
+.IR xpenguins "."
+
+In addition to the
+.I config
+file, the theme directory contains the toon images that make up the
+theme in the form of 
+.IR "xpm image files" "."
+Additionally, there should be an
+.I about
+file which gives information on the creator of the theme, the license
+under which it is distributed and various other things. This file is
+principally for use by
+.IR "xpenguins_applet" ","
+an applet for
+.I GNOME
+that allows different themes to be selected at the click of a
+button.
+
+The
+.I config
+file has a reasonably straightforward format. You can either read this
+rather terse description of it or you can have a look at the config
+file for the default
+.B Penguins
+theme, which is usually installed at
+.IR /usr/share/xpenguins/themes/Penguins/config ","
+and is reasonably well commented. We'll first establish some simple
+terminology. Say you have a Farmyard theme with cows and sheep. The
+cows and sheep are types of 
+.BR toon ","
+while the various things they get up to (walking, mooing and so on)
+are termed
+.BR activities "."
+Each
+.B activity
+has its own
+.IR "xpm image file" ","
+in which the
+.B frames
+of the animation are laid out horizontally. Some activities (notably
+walking) use different images depending on the
+.B direction
+the toon is moving in. In this case the frames for the two directions
+are laid out one above the other in the image.
+
+As in shell scripts, comments are initiated with the
+.B #
+character and hide the remainder of the line. The format is entirely
+free except that there is an arbitrary limit on the length of a line
+of 512 characters.  Spaces, tabs and newlines all count equally as
+white space. Data is entered as a sequence of
+.B "key value"
+pairs, all separated by white space. Neither the
+.BR keys " nor the " values
+are case sensitive, except where the
+.B value
+is a filename. The following
+.B keys
+are understood:
+.TP 8
+.BI "delay " delay
+Set the recommended delay between frames in milliseconds.
+.TP 8
+.BI "toon " toon
+Begin defining a new toon called 
+.IR toon "."
+If only one type of toon is present in the theme then this key may be
+omitted.
+.TP 8
+.BI "number " number
+Set the default number of toons of the current type to start.
+.TP 8
+.BI "define " activity
+Begin defining an
+.I activity
+for the current toon. The currently understood activities are
+.BR walker ", " faller ", " tumbler ", " climber ", " floater ", "
+.BR runner ", " explosion ", " squashed ", "
+.BR zapped ", " splatted ", " angel ", " exit " and "
+.BR action? ", where " ? " is a number between " 0 " and " 6 "."
+Once you've seen the program in action you should be able to guess
+which is which. A valid theme must contain at least
+.BR walkers " and " fallers "."
+Additionally, you may define a default activity (with
+.BR "define default" ");"
+any properties (such as
+.BR width " and " speed ")"
+set here are then adopted by the activities defined from then on, if
+they do not themselves explicitly define those properties.  After an
+activity has been declared with
+.BR define ","
+the following properties may be assigned:
+.TP 8
+.BI pixmap " xpmfile"
+The file containing the image data for the activity. Note that you may
+not set a 
+.BR default " pixmap."
+.TP 8
+.BI width " width"
+The width of each frame of the animation in pixels.
+.TP 8
+.BI height " height"
+The height of each frame of the animation in pixels.
+.TP 8
+.BI frames " frames"
+The number of frames in the animation.
+.TP 8
+.BI directions " directions"
+The number of directions for the activity (can be 1 or 2).
+.TP 8
+.BI speed " speed"
+The initial speed of the toon when engaged in this activity, in pixels
+per frame.
+.TP 8
+.BI acceleration " acceleration"
+The rate at which the speed increases, in pixels per frame
+squared. This property is not utilised by all activities.
+.TP 8
+.BI terminal_velocity " terminal_velocity"
+The maximum speed in pixels per frame, again not utilised by all activities.
+.TP 8
+.BI loop " loop"
+Only understood by the
+.BR actions ";"
+indicates how many times to repeat the action. If negative, then the
+probility of stopping the action every time the action is complete is
+.RI "\-1/" loop "."
+.PP
+Some notes regarding the various activities. If you design a new
+theme, feel free to make the
+.BR splatted ", " squashed ", " zapped " and " exit
+animations as gory and bloody as you like, but please keep the
+.B explosion
+activity nice and tame; that way those of a nervous disposition can
+employ the
+.B \-\-no\-blood
+option which replaces all these violent deaths with a tasteful
+explosion that wouldn't offend your grandmother. Xpm images
+files are a factor of two smaller if you can limit the number of
+colours in the image such that only one character need be used to
+represent each colour; this also makes 
+.I XPenguins
+start up much more rapidly. Rarely are more than 64 colours required.
+
+So that's about it for the
+.I config
+file, now for the 
+.I about
+file. This is very simple. Again comments are initialised by a
+.BR "#" "."
+An entry consists of a
+.BR key
+at the start of a line, followed by the corresponding
+.BR value
+which is read up to the next newline. The following
+.B keys
+are understood, although none are compulsory.
+.TP 8
+.B artist
+Used to list the artist(s) who created the original images.
+.TP 8
+.B maintainer
+The person who compiled the images into an
+.I XPenguins
+theme. It is useful if an email address can also be provided.
+.TP 8
+.B date
+The date when the theme was last modified. My preferred format is
+.IR "day of the month" ","
+.IR "name of the month in english" ","
+.IR "full year" "."
+For example: 24 April 2001.
+.TP 8
+.B icon
+The name of an image file that can be used as an icon for the theme;
+XPM and PNG are suitable formats.
+.TP 8
+.B license
+The name of the license under which the theme is distributed
+(e.g. GPL).
+.TP 8
+.B copyright
+The year and holder of the copyright.
+.TP 8
+.B comment
+Any other essential information, such as the theme's web site, as
+brief as possible.
+
+Please test any 
+.I about
+files you create by looking at how the information is displayed by the
+.I xpenguins_applet
+program.
+
+.SH AUTHOR
+Robin Hogan <R.J.Hogan@reading.ac.uk>.
+.SH CREDITS
+Inspiration provided by Rick Jansen <rick@sara.nl> in the form of the
+classic 
+.IR xsnow . 
+Most penguin images were taken from 
+.IR Pingus ","
+a free lemmings clone that can be found at <http://pingus.seul.org/>;
+these images were designed by Joel Fauche <joel.fauche@wanadoo.fr> and
+Craig Timpany <timpany@es.co.nz>. Additional images in version 2 by
+Rob Gietema <tycoon@planetdescent.com> and Robin Hogan.
+.SH NOTES
+.IR XPenguins
+can load an X server and/or network (although the CPU time used is
+small), and if a large number of penguins are spawned then they may
+begin to flicker, depending on the speed of the X server. 
+.P
+The
+.IR xpenguins
+homepage is located at:
+.P
+http://xpenguins.seul.org/
+.SH BUGS
+A new feature since version 2.1 is the ability to draw to windows
+other than the root window in situations where the window manager or
+desktop environment places a large window over the root window that
+would otherwise obscure the toons. Currently
+.IR XPenguins
+can draw to the KDE Desktop (KDE 2.0 and 2.1), Enlightenment desktops
+greater than 0 (E16), the Nautilus desktop and the virtual root window
+of certain window managers like amiwm.  Of course, simpler window
+managers that don't mess around like this will still work (sawfish,
+blackbox and countless others). It cannot work with CDE and probably
+never will. Future versions of KDE, Enlightenment and Nautilus may not
+work; the classic symptom of this is that
+.I XPenguins
+sits there as if it's doing something, but no toons are visible. If
+this happens, try running the program with one of the simpler window
+manager listed above, or visit the
+.I XPenguins
+web site and download the latest version. If there are icons drawn on
+the root window then the toons will erase them when they walk over
+them, although an expose event will be sent to the window every 100
+frames to redraw them.
+.SH FILES
+$HOME/.xpenguins/themes/*
+.br
+/usr/share/xpenguins/themes/*
+.br
+/proc/loadavg
+.br
+.SH "SEE ALSO"
+xsnow(1), xroach(1), xwininfo(1) pingus(6) 

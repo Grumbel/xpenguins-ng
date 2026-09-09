@@ -1,0 +1,139 @@
+XPENGUINS - cool little penguins walking along the tops of your windows
+Copyright (C) 1999-2001  Robin Hogan
+Version: 2.2 (1 October 2001)
+
+INTRODUCTION
+
+XPenguins is a program for animating cute cartoons/animals in your
+root window. By default it will be penguins - they fall from the top
+of the screen, walk along the top of windows, up the side of windows
+and do various other stuff. Other themes in the base package are "Big
+Penguins" (50% bigger), "Classic Penguins" (reproducing XPenguins
+version 1.2), "Turtles", and "Bill".  More themes can be downloaded
+from the XPenguins web site (http://xpenguins.seul.org/) - version 0.9
+of the xpenguins_themes package contains "The Simpsons", "Sonic the
+Hedgehog", "Lemmings" and "Winnie the Pooh".
+
+To run the program, type "xpenguins" at the console. Type "xpenguins
+--help" to see the available options, or read the man page (type "man
+xpenguins"). If you want to make your own theme, read the THEMES
+section of the man page and have a look at the config file for the
+default theme (which is usually installed in
+/usr/share/xpenguins/themes/Penguins/config). You may also find the
+gimp scripts "lay-out-frames.scm" and "resize-frames.scm" useful - the
+first lays out the frames of an animated gif side by side in a way
+that can be used by XPenguins, and the second resizes an XPenguins
+image frame by frame to avoid bleeding of colors between adjacent
+frames.
+
+
+INSTALLATION
+
+Do the following:
+
+	./configure
+	make
+	make install (as root)
+
+By default everything will be installed in /usr/local. Use
+"./configure --prefix=/usr" (or similar) to install it somewhere
+else. For more information, read the INSTALL file, or type "./configre
+--help". If you have problems with the make process then try using
+"gmake" instead of "make".
+
+
+LICENSE
+
+This program is released under the GNU general public license - see
+the COPYING file. This license applies to everything in the base
+distribution, including the themes "Penguins", "Classic Penguins",
+"Big Penguins", "Turtles" and "Bill".
+
+
+FREQUENTLY ASKED QUESTION
+
+"The program is running but I can't see any penguins. Why?"
+
+"KDE 2, CDE, Enlightenment 0.16 (for desktops > 0), the Nautilus file
+mangler, and possibly others, all put a big X window over the root
+window. In the case of KDE 2.0 and 2.1, Enlightenment and Nautilus
+1.0, XPenguins should be able to find this window and draw to it
+instead of drawing to the root window. It then reports "Drawing to XXX
+Desktop" when it runs. Unfortunately there is no standardised way to
+find the correct window, so in later versions of any of these programs
+it might fail. When this happens the program looks like it's running
+but no toons are visible. Also, hybrid combinations such as KDE plus
+enlightenment might fail. CDE will probably never work, although
+XPenguins should definitely work with simpler window managers like
+sawfish and blackbox.  I have had reports of problems with KDE 2.2.
+This will be fixed when I get access to a machine running KDE 2.2." 
+
+
+TOP TIP
+
+If you have gtk-shell installed, try this courtesy of Carles Amigó. At
+the end of your ~/.bashrc file add the line:
+
+  alias xpselect="xpenguins -t \`gtk-shell -l \"Select a Theme:\" -c \\\`xpenguins -l |sed s/\" \"/_/g\\\` -t xpenguins -b \"Ok\"\`"
+
+Now from a new terminal "xpselect" will allow you to select the theme
+in a handy dialog box.  If you run Korn shell, put the line in your
+~/.kshrc file instead.  It'll probably work with csh too, but will
+need some modification.
+
+
+CODE GUIDE
+
+You are welcome to modify or borrow any of this code, under the
+conditions of the GNU GPL.  The code is in the src directory and is
+organised as follows:
+
+The toon_*.c files contain functions for animating images on the root
+(or other) window. They also hide the X calls from higher-level
+code. Each function is prefixed with "Toon" - you can see which
+functions are in which file by looking at the header file toon.h. One
+function that might be useful in other programs is ToonGetRootWindow()
+in toon_root.c; this finds the appropriate window to draw to when
+Nautilus/Enlightenment/KDE and so on are running. Certainly there are
+programs out there (e.g. xearth and xplanet) that sometimes don't work
+properly in these environments.
+
+The xpenguins_*.c files contain functions (prefixed with xpenguins_)
+that load themes and govern the behaviour of the penguins. The header
+file xpenguins.h describes briefly what each function does. The user
+interface code then interprets the various user-supplied options and
+implements them by calling xpenguins functions; in this way different
+XPenguins front ends produce penguins that behave in the same
+way. This package is the command-line version - the front-end code is
+in main.c. The GNOME graphical front (the xpenguins_applet package)
+uses exactly the same toon and xpenguins files. Therefore if you make
+a modification to the program that you would like me to include in a
+future release, please do it in such a way that it will work in all
+versions.
+
+
+ACKNOWLEDGEMENTS
+
+Inspiration was provided by Rick Jansen <rick@sara.nl> in the form of
+the classic "xsnow".
+
+Many of the penguin images were taken from "Pingus", a free lemmings
+clone for Linux (http://pingus.seul.org/), and were designed by Joel
+Fauche <joel.fauche@wanadoo.fr> and Craig Timpany
+<timpany@es.co.nz>. Rob Gietema <tycoon@planetdescent.com> provided
+some new penguin images now used in the default theme.
+
+
+AUTHOR
+
+Robin Hogan <R.J.Hogan@reading.ac.uk>
+
+The XPenguins homepage is located at http://xpenguins.seul.org/
+
+
+SEE ALSO
+
+Michael Vines <isamu@neomueller.org> has rewritten the program (as of
+version 1.1) for Microsoft Windows and called it "WinPenguins" -
+visit http://neomueller.org/~isamu/winpenguins/ 
+

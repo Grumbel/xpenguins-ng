@@ -1,0 +1,65 @@
+* Version 2.2 (1 October 2001)
+- Added Bill and Big Penguins themes
+- New ToonCheckBlocked() function to avoid changing toons dying immediately
+- Moved Lemmings theme to xpenguin_themes-0.9 in case of copyright issues
+- Added Brian Chu's superpenguin that can face in both directions
+	
+* Version 2.1.4 (2 September 2001)
+- Action toons that move left or right no longer get stuck at walls
+
+* Version 2.1.3 (22 August 2001)
+- Included Dave Andreoli's Lemmings clone theme
+
+* Version 2.1.2 (24 June 2001)
+- Use `--squish' to kill the toons with the mouse
+- Code uses _() around strings to allow future i10n
+
+* Version 2.1.1 (21 June 2001)
+- Desktops only: redraw icons by sending expose events to root window
+- Enabled multiple themes to be selected
+- Use the `--all' option to run all available themes simultaneously
+
+* Version 2.1 (26 May 2001)
+- Found a WM that requires vroot.h: amiwm - replaced vroot.h functionality
+- Detects KDE, Enlightenment & Nautilus desktops & draws to them (at last!)
+- Sends expose event to background window so that KDE icons reappear
+- ToonErase does not erase whole screen on first call
+- No longer segfaults if display not found (new bug in 2.0)
+- Can override root window detection using `--id'
+- Use `--nice' to respond to system load by killing toons
+
+* Version 2.0 (7 May 2001)
+- Minor changes to error reporting
+
+* Version 1.9 (1 May 2001)
+- Code modularisation and separation into lots of different files
+- A massive rewrite of xpenguins_*.c code (toon_*.c functions mostly unchanged)
+- Themability added and some default themes written
+- Now use automake and autoconf
+- Removed use of vroot.h - I really don't know what it did anyway
+
+* Version 1.2 (22 May 2000)
+- Use the X shape extension to allow penguins to negotiate shaped windows
+- `-rectwin' option available to bypass calculation of window shape if too slow
+- Walker and climber behaviour changed to overcome small obstacles
+- Removed whitespace around most penguins images to 30x30 (from 32x32)
+- Walker image changed so walker actually on window, not 1 pixel above!
+- Fixed bug in ToonAdvance that caused toons to get stuck behind KDE panel
+- Renamed functions in toon.c so that all begin with `Toon'
+- Tumblers now accelerate under gravity until they reach `terminal velocity'
+- Can use `-n' as well as `-penguins' to specify the number of penguins
+- Climbers maintain tendency to climb until they next become faller/tumbler
+- Every timestep perform check that penguins are not in the window region
+- Walkers and climbers now move with the windows they're on (up to a limit)
+- Penguins fall in properly from the very top of the screen
+
+* Version 1.1 (26 February 2000)
+- Use Xpm attribute `closeness' so that 8-bit displays are supported
+- Smoothed the jagged edges of floater image (from Pingus)
+- Added the `-ignorepopups', `-version' and `-quiet' options
+- Second interupt causes bursting penguins to be immediately erased
+- Fixed ToonLocateWindows bug that returned before all windows mapped
+
+* Version 1.0 (28 November 1999)
+- Decided that version numbers less than 1 are silly
+

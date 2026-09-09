@@ -16,7 +16,6 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include <X11/Intrinsic.h>
 #include <X11/Xlib.h>
 #include <X11/Xos.h>
 #include <X11/xpm.h>
@@ -177,6 +176,7 @@ int ToonInit(Display *display);
 int ToonConfigure(unsigned long int code);
 int ToonInstallData(ToonData **data, int ngenera, int ntypes);
 int ToonSetupDrawWindow(void);
+void ToonSyncDisplaySize(void);
 #define ToonSetRoot(id) toon_root_override = (Window) id
 
 /* FINISHING UP (toon_end.c) */

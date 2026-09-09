@@ -1,3 +1,15 @@
+* Version 3.0 (9 September 2026) — xpenguins-ng
+- Project renamed to xpenguins-ng
+- CMake build system (Autotools removed)
+- Shaped overlay drawing path for compositing window managers
+  (--overlay / --no-overlay); classic root path retained
+- Multi-monitor: use virtual root geometry for the playfield
+- Occlusion-aware solid window map; periodic geometry refresh
+- Skip desktop/wallpaper and y<=0 surfaces so toons stay visible
+- Spawn / landing fixes (no instant explosions at the top of the screen)
+- --debug diagnostics for the window map
+- Click-through overlay via Shape/XFixes input region
+
 * Version 2.2 (1 October 2001)
 - Added Bill and Big Penguins themes
 - New ToonCheckBlocked() function to avoid changing toons dying immediately

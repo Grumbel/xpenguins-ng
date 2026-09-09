@@ -1,5 +1,5 @@
-Building and installing xpenguins
-=================================
+Building and installing xpenguins-ng
+====================================
 
 This project uses CMake (Autotools support has been removed).
 
@@ -19,5 +19,8 @@ Or with Nix:
 
   nix build
   nix run
+
+The binary is installed as `xpenguins-ng`. Themes go to
+`share/xpenguins-ng/themes/`.
 
 See README.md for runtime options (overlay vs classic drawing).

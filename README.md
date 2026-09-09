@@ -1,17 +1,18 @@
-# xpenguins
+# xpenguins-ng
 
-Cute little penguins (and other themes) that walk along the tops of
-your windows. Originally written by Robin Hogan (1999–2001), version
-2.2, licensed under the GNU GPL v2 or later.
+**xpenguins-ng** 3.0 is a maintained fork of [xpenguins](http://xpenguins.seul.org/)
+2.2 by Robin Hogan. Cute penguins (and other themes) walk along the tops of
+your X11 windows.
 
-This tree is a maintained source package of xpenguins 2.2: CMake
-build, and a dual drawing path so the toons work on modern X11
-compositors as well as classic root-window setups.
+This release targets **modern X11 compositors**: a shaped overlay window
+keeps sprites visible without trashing the root window, with the classic
+root-drawing path still available.
+
+License: GNU GPL v2 or later (same as upstream 2.2).
 
 ## Build
 
-Dependencies: X11 (`libX11`, `libXext`, `libXpm`), optional `libXfixes`
-(for click-through input shape on the overlay).
+Dependencies: X11, libXext, libXpm, libXfixes (optional), CMake ≥ 3.16, pkg-config.
 
 ```bash
 cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local
@@ -19,47 +20,41 @@ cmake --build build
 sudo cmake --install build
 ```
 
-Themes install under `${prefix}/share/xpenguins/themes/`.
-
-## Running
+Or with Nix:
 
 ```bash
-xpenguins
-xpenguins --theme Big_Penguins
-xpenguins --help
+nix build
+nix run
 ```
 
-### Drawing modes
-
-| Mode | When | Behaviour |
-|------|------|-----------|
-| **Overlay** (default with compositor) | `_NET_WM_CM_Sn` owned, or `--overlay` | Full-screen ARGB override-redirect window, transparent background, click-through. No trails on the root. |
-| **Classic** | No compositor, or `--no-overlay` / `--root`, or `--id` | Draw on the desktop / virtual root found by `ToonGetRootWindow()`. |
-
-Force a mode:
+## Run
 
 ```bash
-xpenguins --overlay      # always use transparent overlay
-xpenguins --no-overlay   # always draw on the desktop window
-xpenguins --root         # same as --no-overlay
-xpenguins --id 0x1234    # draw on a specific window (classic path)
+xpenguins-ng
+xpenguins-ng --theme Big_Penguins
+xpenguins-ng --help
+xpenguins-ng --debug
 ```
 
-`--squish` (mouse-kill) disables click-through on the overlay so button
-events can be received.
+### Overlay vs classic drawing
 
-## Themes
+| Option | Behaviour |
+|--------|-----------|
+| *(default)* | Use shaped overlay when a compositor is detected, else classic |
+| `--overlay` | Always use the transparent shaped overlay |
+| `--no-overlay` / `--root` | Always draw on the desktop/root window |
+| `--id 0x…` | Draw on a specific window (classic path) |
 
-System themes: `$prefix/share/xpenguins/themes/`  
-User themes: `~/.xpenguins/themes/`
+### Themes
 
-Bundled: Penguins, Big_Penguins, Classic_Penguins, Turtles, Bill.
+System themes install under `share/xpenguins-ng/themes/`.  
+User themes: `~/.xpenguins-ng/themes/`.
 
-## History / upstream
+## History
 
-- Original project: http://xpenguins.seul.org/
-- A separate modern rewrite (GTK3 UI, different codebase) lives at
-  https://www.ratrabbit.nl/ratrabbit/software/xpenguins
+- **2.2** (2001) — last upstream release by Robin Hogan  
+- **3.0** — xpenguins-ng: CMake, compositor overlay, multi-monitor and
+  window-map fixes (see ChangeLog)
 
-See `TODO.md` for port status and remaining work. See `ChangeLog` and
-`COPYING` for upstream history and license text.
+Original project: http://xpenguins.seul.org/  
+Related modern work: https://www.ratrabbit.nl/ratrabbit/software/xpenguins

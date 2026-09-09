@@ -52,7 +52,7 @@
 
 #define XPENGUINS_VERSION VERSION
 #define XPENGUINS_AUTHOR "Robin Hogan"
-#define XPENGUINS_DATE "1 October 2001"
+#define XPENGUINS_DATE "9 September 2026"
 
 #define ArgumentIs(short_arg, long_arg) (strcmp(argv[n], short_arg) == 0 \
    || strcmp(argv[n], long_arg) == 0 || strcmp(argv[n], "-" long_arg) == 0)
@@ -147,13 +147,13 @@ main (int argc, char **argv)
       ToonConfigure(TOON_NOSHAPEDWINDOWS);
     }
     else if (ArgumentIs("-h", "-help")) {
-      fprintf(stdout, _("XPenguins %s (%s) by %s\n"),
+      fprintf(stdout, _("xpenguins-ng %s (%s) by %s\n"),
 	      XPENGUINS_VERSION, XPENGUINS_DATE, XPENGUINS_AUTHOR);
       ShowUsage(argv);
       exit(0);
     }
     else if (ArgumentIs("-v", "-version")) {
-      fprintf(stdout, "XPenguins %s\n", XPENGUINS_VERSION);
+      fprintf(stdout, "xpenguins-ng %s\n", XPENGUINS_VERSION);
       exit(0);
     }
     else if (ArgumentIs("-q", "-quiet")) {
@@ -325,7 +325,7 @@ main (int argc, char **argv)
   /* Send pixmaps to X server */
   error_message = xpenguins_start(display_name);
   if (error_message) {
-    fprintf(stderr, _("Error starting xpenguins: %s\n"),
+    fprintf(stderr, _("Error starting xpenguins-ng: %s\n"),
 	    error_message);
     exit(2);
   }

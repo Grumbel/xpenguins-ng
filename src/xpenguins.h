@@ -76,12 +76,12 @@
 #ifdef PKGDATADIR
 #define XPENGUINS_SYSTEM_DIRECTORY PKGDATADIR
 #else
-#define XPENGUINS_SYSTEM_DIRECTORY "/usr/share/xpenguins"
+#define XPENGUINS_SYSTEM_DIRECTORY "/usr/share/xpenguins-ng"
 #endif
 
 #endif
 #ifndef XPENGUINS_USER_DIRECTORY
-#define XPENGUINS_USER_DIRECTORY "/.xpenguins"
+#define XPENGUINS_USER_DIRECTORY "/.xpenguins-ng"
 #endif
 
 #ifndef XPENGUINS_THEME_DIRECTORY

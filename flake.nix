@@ -1,5 +1,5 @@
 {
-  description = "xpenguins - animated penguins on your X11 desktop";
+  description = "xpenguins-ng - animated penguins on modern X11 desktops";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs?ref=nixos-unstable";
@@ -12,11 +12,11 @@
         pkgs = nixpkgs.legacyPackages.${system};
       in {
         packages = rec {
-          default = xpenguins;
+          default = xpenguins-ng;
 
-          xpenguins = pkgs.stdenv.mkDerivation {
-            pname = "xpenguins";
-            version = "2.2";
+          xpenguins-ng = pkgs.stdenv.mkDerivation {
+            pname = "xpenguins-ng";
+            version = "3.0";
 
             src = pkgs.lib.cleanSource ./.;
 
@@ -35,7 +35,7 @@
         };
 
         devShells.default = pkgs.mkShell {
-          inputsFrom = [ self.packages.${system}.xpenguins ];
+          inputsFrom = [ self.packages.${system}.xpenguins-ng ];
           nativeBuildInputs = with pkgs; [ cmake pkg-config ];
         };
       }

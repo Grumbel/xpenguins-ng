@@ -1,6 +1,6 @@
-# xpenguins TODO
+# xpenguins-ng TODO
 
-Project: revive xpenguins 2.2 as a proper source tree (no longer a
+Project: xpenguins-ng (fork of xpenguins 2.2) as a proper source tree (no longer a
 Nix-flake-only wrapper), port to modern X11 compositors, and switch
 the build system to CMake.
 
@@ -89,6 +89,10 @@ tarball and applied four small patches.
 
 - [x] Exclude _NET_WM_WINDOW_TYPE_DESKTOP / wallpaper from solid map
 - [x] Add --debug for window-map diagnostics
+
+### Done (continued)
+
+- [x] Rename project to xpenguins-ng, version 3.0
 
 ### In progress / next
 

@@ -51,7 +51,7 @@ __xpenguins_init_penguin(Toon *p)
 			     - data->width),
 		  -((int) data->height));
   if (toon_debug)
-    fprintf(stderr, "[xpenguins] spawn faller at (%d,%d) size %ux%u\n",
+    fprintf(stderr, "[xpenguins-ng] spawn faller at (%d,%d) size %ux%u\n",
             p->x, p->y, data->width, data->height);
   ToonSetAssociation(p, TOON_UNASSOCIATED);
   ToonSetVelocity(p, (p->direction)*2-1, data->speed);
@@ -312,9 +312,9 @@ xpenguins_frame()
     if (moved || --relocate_countdown <= 0) {
       relocate_countdown = 30; /* ~0.5–1s depending on theme delay */
       if (toon_debug && moved)
-	fprintf(stderr, "[xpenguins] window tree change -> relocate\n");
+	fprintf(stderr, "[xpenguins-ng] window tree change -> relocate\n");
       else if (0 && toon_debug && !moved)
-	fprintf(stderr, "[xpenguins] periodic relocate\n");
+	fprintf(stderr, "[xpenguins-ng] periodic relocate\n");
       ToonCalculateAssociations(penguin, penguin_number);
       ToonLocateWindows();
       ToonRelocateAssociated(penguin, penguin_number);

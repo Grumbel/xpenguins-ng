@@ -1,8 +1,8 @@
-.TH XPenguins 1 "1 October 2001" "XPenguins 2.2"
+.TH xpenguins-ng 1 "9 September 2026" "xpenguins-ng 3.0"
 .SH NAME
-xpenguins \- cute little penguins that walk along the tops of your windows
+xpenguins-ng \- cute little penguins (modern X11 fork of xpenguins) that walk along the tops of your windows
 .SH SYNOPSIS
-.B xpenguins
+.B xpenguins-ng
 [-option ...]
 .SH DESCRIPTION
 .IR XPenguins
@@ -33,7 +33,7 @@ Do not show any gory death sequences.
 .BI "\-c " dir ", \-\-config\-dir " dir
 Look for config files and themes in this directory. The default is
 usually
-.IR /usr/share/xpenguins "."
+.IR /usr/share/xpenguins-ng "."
 .TP 8
 .BI "\-d " display ", \-\-display " display
 Send the toons to the specified X display. In the absence of this
@@ -126,9 +126,9 @@ is running.
 
 .SH THEMES
 The system themes are usually kept in
-.IR /usr/share/xpenguins/themes ", "
+.IR /usr/share/xpenguins-ng/themes ", "
 and these can be augmented or overridden by the user's themes in
-.IR $HOME/.xpenguins/themes "."
+.IR $HOME/.xpenguins-ng/themes "."
 Each theme has its own subdirectory which to be valid must contain a
 file called
 .IR config "."
@@ -162,7 +162,7 @@ rather terse description of it or you can have a look at the config
 file for the default
 .B Penguins
 theme, which is usually installed at
-.IR /usr/share/xpenguins/themes/Penguins/config ","
+.IR /usr/share/xpenguins-ng/themes/Penguins/config ","
 and is reasonably well commented. We'll first establish some simple
 terminology. Say you have a Farmyard theme with cows and sheep. The
 cows and sheep are types of 
@@ -377,9 +377,9 @@ the root window then the toons will erase them when they walk over
 them, although an expose event will be sent to the window every 100
 frames to redraw them.
 .SH FILES
-$HOME/.xpenguins/themes/*
+$HOME/.xpenguins-ng/themes/*
 .br
-/usr/share/xpenguins/themes/*
+/usr/share/xpenguins-ng/themes/*
 .br
 /proc/loadavg
 .br

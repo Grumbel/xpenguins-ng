@@ -248,13 +248,13 @@ ToonLocateWindows(void)
     /* Desktop/wallpaper is not terrain */
     if (__ToonIsDesktopWindow(toon_display, children[wx])) {
       if (toon_debug)
-	fprintf(stderr, "[xpenguins] skip DESKTOP window 0x%lx\n",
+	fprintf(stderr, "[xpenguins-ng] skip DESKTOP window 0x%lx\n",
 		(unsigned long) children[wx]);
       continue;
     }
     if (children[wx] == toon_root && toon_root != toon_parent) {
       if (toon_debug)
-	fprintf(stderr, "[xpenguins] skip root/background 0x%lx\n",
+	fprintf(stderr, "[xpenguins-ng] skip root/background 0x%lx\n",
 		(unsigned long) children[wx]);
       continue;
     }
@@ -280,7 +280,7 @@ ToonLocateWindows(void)
       if (y <= 0) {
 	if (toon_debug)
 	  fprintf(stderr,
-		  "[xpenguins] skip y<=0 window 0x%lx (%d,%d) %ux%u\n",
+		  "[xpenguins-ng] skip y<=0 window 0x%lx (%d,%d) %ux%u\n",
 		  (unsigned long) children[wx], x, y, width, height);
 	continue;
       }
@@ -291,7 +291,7 @@ ToonLocateWindows(void)
 	  && height >= (unsigned) toon_display_height - 32) {
 	if (toon_debug)
 	  fprintf(stderr,
-		  "[xpenguins] skip full-screen low-stack 0x%lx (%d,%d) %ux%u\n",
+		  "[xpenguins-ng] skip full-screen low-stack 0x%lx (%d,%d) %ux%u\n",
 		  (unsigned long) children[wx], x, y, width, height);
 	continue;
       }
@@ -304,7 +304,7 @@ ToonLocateWindows(void)
       window_rect->width = width;
       if (toon_debug)
 	fprintf(stderr,
-		"[xpenguins] solid candidate 0x%lx (%d,%d) %ux%u stack=%d\n",
+		"[xpenguins-ng] solid candidate 0x%lx (%d,%d) %ux%u stack=%d\n",
 		(unsigned long) children[wx], x, y, width, height, wx);
     }
   }
@@ -362,7 +362,7 @@ ToonLocateWindows(void)
 	nsolid++;
     XClipBox(toon_windows, &box);
     fprintf(stderr,
-	    "[xpenguins] locate: display %dx%d, children %u, solid %d, "
+	    "[xpenguins-ng] locate: display %dx%d, children %u, solid %d, "
 	    "region box (%d,%d) %dx%d, empty=%d\n",
 	    toon_display_width, toon_display_height,
 	    (unsigned) toon_nwindows, nsolid,

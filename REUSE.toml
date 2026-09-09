@@ -1,0 +1,355 @@
+version = 1
+
+[[annotations]]
+path = [
+  "AUTHORS",
+  "ChangeLog",
+  "NEWS",
+  "README.original",
+]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "1999-2001 Robin Hogan <R.J.Hogan@reading.ac.uk>"
+SPDX-License-Identifier = "GPL-2.0-or-later"
+
+[[annotations]]
+path = [
+  "INSTALL",
+  "README.md",
+  "TODO.md",
+]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 Ingo Ruhnke <grumbel@gmail.com>"
+SPDX-License-Identifier = "GPL-2.0-or-later"
+
+[[annotations]]
+path = "COPYING"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Free Software Foundation, Inc."
+SPDX-License-Identifier = "GPL-2.0-or-later"
+
+[[annotations]]
+path = [
+  "flake.nix",
+  "flake.lock",
+  ".gitignore",
+]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 Ingo Ruhnke <grumbel@gmail.com>"
+SPDX-License-Identifier = "GPL-2.0-or-later"
+
+[[annotations]]
+path = "xpenguins-ng.1"
+precedence = "aggregate"
+SPDX-FileCopyrightText = [
+  "1999-2001 Robin Hogan <R.J.Hogan@reading.ac.uk>",
+  "2026 Ingo Ruhnke <grumbel@gmail.com>",
+]
+SPDX-License-Identifier = "GPL-2.0-or-later"
+
+[[annotations]]
+path = [
+  "themes/Penguins/about",
+  "themes/Penguins/config",
+  "themes/Penguins/penguin.png",
+]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "1999-2001 Robin Hogan <R.J.Hogan@reading.ac.uk>"
+SPDX-License-Identifier = "GPL-2.0-or-later"
+
+[[annotations]]
+path = "themes/Penguins/bomber.xpm"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Joel Fauche <joel.fauche@wanadoo.fr>"
+SPDX-License-Identifier = "GPL-2.0-or-later"
+
+[[annotations]]
+path = "themes/Penguins/climber.xpm"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Joel Fauche <joel.fauche@wanadoo.fr>"
+SPDX-License-Identifier = "GPL-2.0-or-later"
+
+[[annotations]]
+path = "themes/Penguins/digger.xpm"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Craig Timpany <timpany@es.co.nz>"
+SPDX-License-Identifier = "GPL-2.0-or-later"
+
+[[annotations]]
+path = "themes/Penguins/faller.xpm"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Joel Fauche <joel.fauche@wanadoo.fr>"
+SPDX-License-Identifier = "GPL-2.0-or-later"
+
+[[annotations]]
+path = "themes/Penguins/floater.xpm"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Joel Fauche <joel.fauche@wanadoo.fr>"
+SPDX-License-Identifier = "GPL-2.0-or-later"
+
+[[annotations]]
+path = "themes/Penguins/tumbler.xpm"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Craig Timpany <timpany@es.co.nz>"
+SPDX-License-Identifier = "GPL-2.0-or-later"
+
+[[annotations]]
+path = "themes/Penguins/walker.xpm"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Joel Fauche <joel.fauche@wanadoo.fr>"
+SPDX-License-Identifier = "GPL-2.0-or-later"
+
+[[annotations]]
+path = [
+  "themes/Penguins/explosion.xpm",
+  "themes/Penguins/zapped.xpm",
+  "themes/Penguins/exit.xpm",
+  "themes/Penguins/splat.xpm",
+]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "unknown (distributed with xpenguins by Robin Hogan)"
+SPDX-License-Identifier = "GPL-2.0-or-later"
+
+[[annotations]]
+path = "themes/Penguins/angel.xpm"
+precedence = "aggregate"
+SPDX-FileCopyrightText = [
+  "Rob Gietema <tycoon@planetdescent.com>",
+  "1999-2001 Robin Hogan <R.J.Hogan@reading.ac.uk>",
+]
+SPDX-License-Identifier = "GPL-2.0-or-later"
+
+[[annotations]]
+path = "themes/Penguins/ballooner.xpm"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Rob Gietema <tycoon@planetdescent.com>"
+SPDX-License-Identifier = "GPL-2.0-or-later"
+
+[[annotations]]
+path = "themes/Penguins/climber_skateboarder.xpm"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Rob Gietema <tycoon@planetdescent.com>"
+SPDX-License-Identifier = "GPL-2.0-or-later"
+
+[[annotations]]
+path = "themes/Penguins/reader.xpm"
+precedence = "aggregate"
+SPDX-FileCopyrightText = [
+  "Rob Gietema <tycoon@planetdescent.com>",
+  "1999-2001 Robin Hogan <R.J.Hogan@reading.ac.uk>",
+]
+SPDX-License-Identifier = "GPL-2.0-or-later"
+
+[[annotations]]
+path = "themes/Penguins/skateboarder.xpm"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Rob Gietema <tycoon@planetdescent.com>"
+SPDX-License-Identifier = "GPL-2.0-or-later"
+
+[[annotations]]
+path = "themes/Penguins/superpenguin.xpm"
+precedence = "aggregate"
+SPDX-FileCopyrightText = [
+  "Rob Gietema <tycoon@planetdescent.com>",
+  "1999-2001 Robin Hogan <R.J.Hogan@reading.ac.uk>",
+  "Brian Chu <chub@stuy.yi.org>",
+]
+SPDX-License-Identifier = "GPL-2.0-or-later"
+
+[[annotations]]
+path = [
+  "themes/Big_Penguins/about",
+  "themes/Big_Penguins/config",
+  "themes/Big_Penguins/bigpenguin.png",
+]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "1999-2001 Robin Hogan <R.J.Hogan@reading.ac.uk>"
+SPDX-License-Identifier = "GPL-2.0-or-later"
+
+[[annotations]]
+path = "themes/Big_Penguins/bomber.xpm"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Joel Fauche <joel.fauche@wanadoo.fr>"
+SPDX-License-Identifier = "GPL-2.0-or-later"
+
+[[annotations]]
+path = "themes/Big_Penguins/climber.xpm"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Joel Fauche <joel.fauche@wanadoo.fr>"
+SPDX-License-Identifier = "GPL-2.0-or-later"
+
+[[annotations]]
+path = "themes/Big_Penguins/digger.xpm"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Craig Timpany <timpany@es.co.nz>"
+SPDX-License-Identifier = "GPL-2.0-or-later"
+
+[[annotations]]
+path = "themes/Big_Penguins/faller.xpm"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Joel Fauche <joel.fauche@wanadoo.fr>"
+SPDX-License-Identifier = "GPL-2.0-or-later"
+
+[[annotations]]
+path = "themes/Big_Penguins/floater.xpm"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Joel Fauche <joel.fauche@wanadoo.fr>"
+SPDX-License-Identifier = "GPL-2.0-or-later"
+
+[[annotations]]
+path = "themes/Big_Penguins/tumbler.xpm"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Craig Timpany <timpany@es.co.nz>"
+SPDX-License-Identifier = "GPL-2.0-or-later"
+
+[[annotations]]
+path = "themes/Big_Penguins/walker.xpm"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Joel Fauche <joel.fauche@wanadoo.fr>"
+SPDX-License-Identifier = "GPL-2.0-or-later"
+
+[[annotations]]
+path = [
+  "themes/Big_Penguins/explosion.xpm",
+  "themes/Big_Penguins/zapped.xpm",
+  "themes/Big_Penguins/exit.xpm",
+  "themes/Big_Penguins/splat.xpm",
+]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "unknown (distributed with xpenguins by Robin Hogan)"
+SPDX-License-Identifier = "GPL-2.0-or-later"
+
+[[annotations]]
+path = "themes/Big_Penguins/angel.xpm"
+precedence = "aggregate"
+SPDX-FileCopyrightText = [
+  "Rob Gietema <tycoon@planetdescent.com>",
+  "1999-2001 Robin Hogan <R.J.Hogan@reading.ac.uk>",
+]
+SPDX-License-Identifier = "GPL-2.0-or-later"
+
+[[annotations]]
+path = "themes/Big_Penguins/ballooner.xpm"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Rob Gietema <tycoon@planetdescent.com>"
+SPDX-License-Identifier = "GPL-2.0-or-later"
+
+[[annotations]]
+path = "themes/Big_Penguins/climber_skateboarder.xpm"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Rob Gietema <tycoon@planetdescent.com>"
+SPDX-License-Identifier = "GPL-2.0-or-later"
+
+[[annotations]]
+path = "themes/Big_Penguins/reader.xpm"
+precedence = "aggregate"
+SPDX-FileCopyrightText = [
+  "Rob Gietema <tycoon@planetdescent.com>",
+  "1999-2001 Robin Hogan <R.J.Hogan@reading.ac.uk>",
+]
+SPDX-License-Identifier = "GPL-2.0-or-later"
+
+[[annotations]]
+path = "themes/Big_Penguins/skateboarder.xpm"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Rob Gietema <tycoon@planetdescent.com>"
+SPDX-License-Identifier = "GPL-2.0-or-later"
+
+[[annotations]]
+path = "themes/Big_Penguins/superpenguin.xpm"
+precedence = "aggregate"
+SPDX-FileCopyrightText = [
+  "Rob Gietema <tycoon@planetdescent.com>",
+  "1999-2001 Robin Hogan <R.J.Hogan@reading.ac.uk>",
+  "Brian Chu <chub@stuy.yi.org>",
+]
+SPDX-License-Identifier = "GPL-2.0-or-later"
+
+[[annotations]]
+path = [
+  "themes/Classic_Penguins/about",
+  "themes/Classic_Penguins/config",
+  "themes/Classic_Penguins/sitter.png",
+]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "1999-2001 Robin Hogan <R.J.Hogan@reading.ac.uk>"
+SPDX-License-Identifier = "GPL-2.0-or-later"
+
+[[annotations]]
+path = "themes/Classic_Penguins/bomber.xpm"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Joel Fauche <joel.fauche@wanadoo.fr>"
+SPDX-License-Identifier = "GPL-2.0-or-later"
+
+[[annotations]]
+path = "themes/Classic_Penguins/climber.xpm"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Joel Fauche <joel.fauche@wanadoo.fr>"
+SPDX-License-Identifier = "GPL-2.0-or-later"
+
+[[annotations]]
+path = "themes/Classic_Penguins/faller.xpm"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Joel Fauche <joel.fauche@wanadoo.fr>"
+SPDX-License-Identifier = "GPL-2.0-or-later"
+
+[[annotations]]
+path = "themes/Classic_Penguins/floater.xpm"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Joel Fauche <joel.fauche@wanadoo.fr>"
+SPDX-License-Identifier = "GPL-2.0-or-later"
+
+[[annotations]]
+path = "themes/Classic_Penguins/walker.xpm"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Joel Fauche <joel.fauche@wanadoo.fr>"
+SPDX-License-Identifier = "GPL-2.0-or-later"
+
+[[annotations]]
+path = "themes/Classic_Penguins/tumbler.xpm"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Craig Timpany <timpany@es.co.nz>"
+SPDX-License-Identifier = "GPL-2.0-or-later"
+
+[[annotations]]
+path = "themes/Classic_Penguins/explosion.xpm"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "unknown (distributed with xpenguins by Robin Hogan)"
+SPDX-License-Identifier = "GPL-2.0-or-later"
+
+[[annotations]]
+path = [
+  "themes/Turtles/about",
+  "themes/Turtles/config",
+  "themes/Turtles/turtle.png",
+  "themes/Turtles/bomber.xpm",
+  "themes/Turtles/climber.xpm",
+  "themes/Turtles/explosion.xpm",
+  "themes/Turtles/faller.xpm",
+  "themes/Turtles/floater.xpm",
+  "themes/Turtles/tumbler.xpm",
+  "themes/Turtles/walker.xpm",
+]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2000 Mayuko Nagata <mayuko@imd.co.jp>"
+SPDX-License-Identifier = "GPL-2.0-or-later"
+
+[[annotations]]
+path = [
+  "themes/Bill/about",
+  "themes/Bill/config",
+  "themes/Bill/bill.png",
+  "themes/Bill/carrier.xpm",
+  "themes/Bill/climber.xpm",
+  "themes/Bill/explosion.xpm",
+  "themes/Bill/faller.xpm",
+  "themes/Bill/hacker.xpm",
+  "themes/Bill/splat.xpm",
+  "themes/Bill/walker.xpm",
+]
+precedence = "aggregate"
+SPDX-FileCopyrightText = [
+  "1994-1996 Matias Duarte / Psychosoft",
+  "1999-2001 Robin Hogan <R.J.Hogan@reading.ac.uk>",
+]
+SPDX-License-Identifier = "GPL-2.0-or-later"
+

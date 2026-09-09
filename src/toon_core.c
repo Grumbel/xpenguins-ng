@@ -192,8 +192,12 @@ ToonLocateWindows()
   /* Refresh display size (and resize overlay if needed) */
   ToonSyncDisplaySize();
 
-  /* Add windows to region */
-  for (wx=0; wx<toon_nwindows; wx++) {
+  /*
+   * First pass: record geometry of candidate solid windows.
+   * XQueryTree lists children bottom-to-top; we need that order later
+   * to subtract occlusion so only *visible* window surface is solid.
+   */
+  for (wx = 0; wx < (int) toon_nwindows; wx++) {
     toon_errno = 0;
 
     toon_windata[wx].wid = children[wx];
@@ -213,17 +217,16 @@ ToonLocateWindows()
 
     if (attributes.map_state == IsViewable) {
       /* Geometry of the window, borders inclusive */
-
       x = attributes.x - toon_x_offset;
       y = attributes.y - toon_y_offset;
-      width = attributes.width + 2*attributes.border_width;
-      height = attributes.height + 2*attributes.border_width;
+      width = attributes.width + 2 * attributes.border_width;
+      height = attributes.height + 2 * attributes.border_width;
 
       /* Entirely offscreen? */
       if (x >= toon_display_width) continue;
       if (y >= toon_display_height) continue;
-      if (y <= 0) continue;
-      if ((x + width) < 0) continue;
+      if (y + (int) height <= 0) continue;
+      if (x + (int) width <= 0) continue;
 
       toon_windata[wx].solid = 1;
       window_rect = &(toon_windata[wx].pos);
@@ -231,29 +234,56 @@ ToonLocateWindows()
       window_rect->y = y;
       window_rect->height = height;
       window_rect->width = width;
-      /* The area of the windows themselves */
-      if (!toon_shaped_windows) {
-	XUnionRectWithRegion(window_rect, toon_windows, toon_windows);
-      }
-      else {
-	rects = XShapeGetRectangles(toon_display, children[wx], ShapeBounding,
-				    &nrects, &rectord);
-	if (nrects <= 1) {
-	  XUnionRectWithRegion(window_rect, toon_windows, toon_windows);
-	}
-	else {
-	  for (irect=0;irect<nrects;irect++) {
-	    rects[irect].x += x;
-	    rects[irect].y += y;
-	    XUnionRectWithRegion(rects+irect, toon_windows, toon_windows);
-	  }
-	}
-	if ((rects) && (nrects > 0)) {
-	  XFree(rects);
-	}
-      }
     }
   }
+
+  /*
+   * Second pass: top-most window first.  Visible solid area is the
+   * window region minus everything already covered by higher windows,
+   * so penguins do not walk on tops that are hidden behind other
+   * clients.
+   */
+  {
+    Region covered = XCreateRegion();
+    Region win_reg = XCreateRegion();
+    Region visible = XCreateRegion();
+
+    for (wx = (int) toon_nwindows - 1; wx >= 0; wx--) {
+      if (!toon_windata[wx].solid)
+	continue;
+
+      XDestroyRegion(win_reg);
+      win_reg = XCreateRegion();
+      window_rect = &(toon_windata[wx].pos);
+
+      if (!toon_shaped_windows) {
+	XUnionRectWithRegion(window_rect, win_reg, win_reg);
+      } else {
+	rects = XShapeGetRectangles(toon_display, toon_windata[wx].wid,
+				    ShapeBounding, &nrects, &rectord);
+	if (nrects <= 1) {
+	  XUnionRectWithRegion(window_rect, win_reg, win_reg);
+	} else {
+	  for (irect = 0; irect < nrects; irect++) {
+	    rects[irect].x += window_rect->x;
+	    rects[irect].y += window_rect->y;
+	    XUnionRectWithRegion(rects + irect, win_reg, win_reg);
+	  }
+	}
+	if (rects && nrects > 0)
+	  XFree(rects);
+      }
+
+      XSubtractRegion(win_reg, covered, visible);
+      XUnionRegion(toon_windows, visible, toon_windows);
+      XUnionRegion(covered, win_reg, covered);
+    }
+
+    XDestroyRegion(covered);
+    XDestroyRegion(win_reg);
+    XDestroyRegion(visible);
+  }
+
   XFree(children);
   XSetErrorHandler((__ToonErrorHandler *) NULL);
   return 0;

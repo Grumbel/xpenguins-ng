@@ -202,6 +202,9 @@ main (int argc, char **argv)
     else if (ArgumentIs("-s", "-squish")) {
       ToonConfigure(TOON_SQUISH);
     }
+    else if (LongArgumentIs("-debug")) {
+      toon_debug = 1;
+    }
     else if (LongArgumentIs("-overlay")) {
       ToonConfigure(TOON_OVERLAY);
     }
@@ -416,6 +419,7 @@ ShowUsage(char **argv)
 	    "  -b, --no-blood                    Do not show any gory images\n"
 	    "  -a, --no-angels                   Do not show any cherubim\n"
 	    "  -s, --squish                      kill penguins with mouse\n"
+	    "      --debug                        window-map / spawn diagnostics\n"
 	    "      --overlay                     force transparent overlay (compositor)\n"
 	    "      --no-overlay, --root          force classic root-window drawing\n"
 	    "      --all                         Run all available themes simultaneously\n"

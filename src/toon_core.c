@@ -17,6 +17,7 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
+#include <X11/Xatom.h>
 #include "toon.h"
 
 /* Error handler for X */
@@ -155,8 +156,37 @@ ToonAdvance(Toon *toon, int mode)
    that we don't want our toons to enter */
 /* Returns 0 on success, 1 if windows moved again during the execution
    of this function */
+/* True if window is a desktop/wallpaper surface (not walkable terrain). */
+static int
+__ToonIsDesktopWindow(Display *dpy, Window w)
+{
+  Atom type_atom, desktop_atom, actual_type;
+  int actual_format;
+  unsigned long nitems, bytesafter;
+  Atom *atoms = NULL;
+  int i, is_desktop = 0;
+
+  type_atom = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE", True);
+  desktop_atom = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_DESKTOP", True);
+  if (type_atom == None || desktop_atom == None)
+    return 0;
+
+  if (XGetWindowProperty(dpy, w, type_atom, 0, 16, False, XA_ATOM,
+			 &actual_type, &actual_format, &nitems, &bytesafter,
+			 (unsigned char **) &atoms) == Success && atoms) {
+    for (i = 0; i < (int) nitems; i++) {
+      if (atoms[i] == desktop_atom) {
+	is_desktop = 1;
+	break;
+      }
+    }
+    XFree(atoms);
+  }
+  return is_desktop;
+}
+
 int
-ToonLocateWindows()
+ToonLocateWindows(void)
 {
   Window *children = NULL;
   Window dummy;
@@ -176,10 +206,10 @@ ToonLocateWindows()
   toon_windows = XCreateRegion();
 
   /* Get children of root */
-  oldnwindows=toon_nwindows;
+  oldnwindows = toon_nwindows;
   wx = XQueryTree(toon_display, toon_parent, &dummy, &dummy, &children, &toon_nwindows);
 
-  if (toon_nwindows>oldnwindows) {
+  if (toon_nwindows > oldnwindows) {
     if (toon_windata)
       free(toon_windata);
     if ((toon_windata = calloc(toon_nwindows, sizeof(__ToonWindowData)))
@@ -215,18 +245,43 @@ ToonLocateWindows()
     if (toon_squish_window && children[wx] == toon_squish_window)
       continue;
 
+    /* Desktop/wallpaper is not terrain */
+    if (__ToonIsDesktopWindow(toon_display, children[wx])) {
+      if (toon_debug)
+	fprintf(stderr, "[xpenguins] skip DESKTOP window 0x%lx\n",
+		(unsigned long) children[wx]);
+      continue;
+    }
+    if (children[wx] == toon_root && toon_root != toon_parent) {
+      if (toon_debug)
+	fprintf(stderr, "[xpenguins] skip root/background 0x%lx\n",
+		(unsigned long) children[wx]);
+      continue;
+    }
+
     if (attributes.map_state == IsViewable) {
-      /* Geometry of the window, borders inclusive */
       x = attributes.x - toon_x_offset;
       y = attributes.y - toon_y_offset;
       width = attributes.width + 2 * attributes.border_width;
       height = attributes.height + 2 * attributes.border_width;
 
-      /* Entirely offscreen? (do NOT skip y<=0: that excluded maximized windows) */
+      /* Entirely offscreen? */
       if (x >= toon_display_width) continue;
       if (y >= toon_display_height) continue;
       if (y + (int) height <= 0) continue;
       if (x + (int) width <= 0) continue;
+
+      /* Near-fullscreen windows low in the stack are usually wallpaper */
+      if (wx < 3
+	  && width >= (unsigned) toon_display_width - 16
+	  && height >= (unsigned) toon_display_height - 16
+	  && x <= 8 && y <= 8) {
+	if (toon_debug)
+	  fprintf(stderr,
+		  "[xpenguins] skip full-screen low-stack 0x%lx (%d,%d) %ux%u\n",
+		  (unsigned long) children[wx], x, y, width, height);
+	continue;
+      }
 
       toon_windata[wx].solid = 1;
       window_rect = &(toon_windata[wx].pos);
@@ -234,14 +289,16 @@ ToonLocateWindows()
       window_rect->y = y;
       window_rect->height = height;
       window_rect->width = width;
+      if (toon_debug)
+	fprintf(stderr,
+		"[xpenguins] solid candidate 0x%lx (%d,%d) %ux%u stack=%d\n",
+		(unsigned long) children[wx], x, y, width, height, wx);
     }
   }
 
   /*
-   * Second pass: top-most window first.  Visible solid area is the
-   * window region minus everything already covered by higher windows,
-   * so penguins do not walk on tops that are hidden behind other
-   * clients.
+   * Second pass: top-most window first. Visible solid area is the
+   * window region minus everything already covered by higher windows.
    */
   {
     Region covered = XCreateRegion();
@@ -282,6 +339,22 @@ ToonLocateWindows()
     XDestroyRegion(covered);
     XDestroyRegion(win_reg);
     XDestroyRegion(visible);
+  }
+
+  if (toon_debug) {
+    XRectangle box;
+    int nsolid = 0;
+    for (wx = 0; wx < (int) toon_nwindows; wx++)
+      if (toon_windata[wx].solid)
+	nsolid++;
+    XClipBox(toon_windows, &box);
+    fprintf(stderr,
+	    "[xpenguins] locate: display %dx%d, children %u, solid %d, "
+	    "region box (%d,%d) %dx%d, empty=%d\n",
+	    toon_display_width, toon_display_height,
+	    (unsigned) toon_nwindows, nsolid,
+	    box.x, box.y, box.width, box.height,
+	    XEmptyRegion(toon_windows));
   }
 
   XFree(children);

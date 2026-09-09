@@ -50,6 +50,9 @@ __xpenguins_init_penguin(Toon *p)
   ToonSetPosition(p, RandInt(ToonDisplayWidth()
 			     - data->width),
 		  -((int) data->height));
+  if (toon_debug)
+    fprintf(stderr, "[xpenguins] spawn faller at (%d,%d) size %ux%u\n",
+            p->x, p->y, data->width, data->height);
   ToonSetAssociation(p, TOON_UNASSOCIATED);
   ToonSetVelocity(p, (p->direction)*2-1, data->speed);
   p->terminating = 0;

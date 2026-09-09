@@ -159,6 +159,7 @@ extern int toon_button_x;
 extern int toon_button_y;
 extern char toon_expose;
 extern char toon_squish;
+extern char toon_debug;
 extern Window toon_squish_window;
 
 /*** FUNCTION PROTOTYPES ***/

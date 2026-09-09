@@ -56,4 +56,5 @@ int toon_button_x = -1;
 int toon_button_y = -1;
 char toon_expose;
 char toon_squish = 0;
+char toon_debug = 0;
 Window toon_squish_window = (Window) 0;

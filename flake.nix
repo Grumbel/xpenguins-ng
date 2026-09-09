@@ -1,6 +1,6 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs?ref=nixos-24.05";
+    nixpkgs.url = "github:NixOS/nixpkgs?ref=nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
 
     xpenguins_src.url = "http://xpenguins.seul.org/xpenguins-2.2.tar.gz";
@@ -23,13 +23,16 @@
 
             patches = [
               ./fix-snprintf-error.diff
+              ./fix-main.diff
+              ./fix-XSetErrorHandler.diff
+              ./fix-exit.diff
             ];
 
             buildInputs = with pkgs; [
-              xorg.libX11
-              xorg.libXpm
-              xorg.libXt
-              xorg.libXext
+              libx11
+              libxpm
+              libxt
+              libxext
             ];
           };
         };

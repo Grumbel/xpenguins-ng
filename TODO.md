@@ -167,3 +167,11 @@ Log sequence that previously produced an invisible slot:
 Docking and XEmbed worked; the icon was blank because the window was
 on the default visual while the panel expected its advertised visual,
 and the 32×32 BackgroundPixmap did not match the 22×22 slot.
+
+### Done (continued)
+
+- [x] Tray icon still invisible on XFCE ARGB visual (depth 32)
+  - XAllocNamedColor / Xpm left alpha=0; panel composites icon away
+  - Build TrueColor pixels with full opacity via channel masks
+  - XGetImage/XPutImage pass to force alpha on strip + icon pixmap
+  - Opaque background_pixel / paint fill for depth-32 windows

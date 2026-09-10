@@ -221,3 +221,11 @@ and the 32×32 BackgroundPixmap did not match the 22×22 slot.
   - Overlay path used full-rectangle XCopyArea without clip mask
   - Transparent XPM pixels (often black) overwrote the toon underneath
   - Always apply data->mask as GC clip when blitting (classic + overlay)
+
+### Done (continued)
+
+- [x] Classic (non-compositor) mode leaves trails
+  - XClearArea only restores window background; modern DEs paint
+    wallpaper into a pixmap and set _XROOTPMAP_ID instead
+  - Erase copies from _XROOTPMAP_ID / ESETROOT_PMAP_ID when present
+  - Fall back to XClearArea if no root pixmap is published

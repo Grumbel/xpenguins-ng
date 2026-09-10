@@ -22,8 +22,114 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 #include <stdio.h>
+#include <X11/Xatom.h>
 #include <X11/extensions/shape.h>
 #include "toon.h"
+
+/* Wallpaper pixmap published by modern desktop managers (feh, xfdesktop,
+ * nitrogen, ...).  XClearArea only restores a window *background*, which
+ * those tools often leave unset — so classic mode left trails. */
+static Pixmap toon_root_pmap = None;
+static int toon_root_pmap_w = 0, toon_root_pmap_h = 0;
+
+static void
+__ToonRefreshRootPixmap(void)
+{
+  Atom atoms[2];
+  Atom type = None;
+  int format = 0;
+  unsigned long nitems = 0, bytes_after = 0;
+  unsigned char *prop = NULL;
+  int a;
+
+  atoms[0] = XInternAtom(toon_display, "_XROOTPMAP_ID", True);
+  atoms[1] = XInternAtom(toon_display, "ESETROOT_PMAP_ID", True);
+
+  toon_root_pmap = None;
+  toon_root_pmap_w = toon_root_pmap_h = 0;
+
+  for (a = 0; a < 2; a++) {
+    if (atoms[a] == None)
+      continue;
+    {
+      Window xroot = RootWindow(toon_display, DefaultScreen(toon_display));
+      prop = NULL;
+      nitems = 0;
+      /* Property lives on the X root; we may draw on a virtual desktop. */
+      if (XGetWindowProperty(toon_display, xroot, atoms[a], 0, 1, False,
+			     XA_PIXMAP, &type, &format, &nitems, &bytes_after,
+			     &prop) != Success) {
+	prop = NULL;
+	nitems = 0;
+      }
+    }
+    if (prop && nitems >= 1) {
+      toon_root_pmap = *((Pixmap *) (void *) prop);
+      XFree(prop);
+      prop = NULL;
+      if (toon_root_pmap != None) {
+	Window root_ret;
+	int x, y;
+	unsigned int w, h, bw, depth;
+	if (XGetGeometry(toon_display, toon_root_pmap, &root_ret,
+			 &x, &y, &w, &h, &bw, &depth)) {
+	  toon_root_pmap_w = (int) w;
+	  toon_root_pmap_h = (int) h;
+	  return;
+	}
+	toon_root_pmap = None;
+      }
+    } else if (prop) {
+      XFree(prop);
+      prop = NULL;
+    }
+  }
+}
+
+/* Restore wallpaper under a rectangle; fall back to XClearArea. */
+static void
+__ToonClearRect(int x, int y, unsigned int width, unsigned int height)
+{
+  if (width == 0 || height == 0)
+    return;
+
+  {
+    static int refresh_cd = 0;
+    if (toon_root_pmap == None || --refresh_cd <= 0) {
+      __ToonRefreshRootPixmap();
+      refresh_cd = 300; /* re-check wallpaper every few seconds */
+    }
+  }
+
+  if (toon_root_pmap != None && toon_root_pmap_w > 0 && toon_root_pmap_h > 0) {
+    int sx = x, sy = y;
+    int dx = x, dy = y;
+    int w = (int) width, h = (int) height;
+
+    /* Root pixmap is often sized to the virtual desktop; clamp. */
+    if (sx < 0) {
+      w += sx;
+      dx -= sx;
+      sx = 0;
+    }
+    if (sy < 0) {
+      h += sy;
+      dy -= sy;
+      sy = 0;
+    }
+    if (sx + w > toon_root_pmap_w)
+      w = toon_root_pmap_w - sx;
+    if (sy + h > toon_root_pmap_h)
+      h = toon_root_pmap_h - sy;
+    if (w > 0 && h > 0) {
+      XCopyArea(toon_display, toon_root_pmap, toon_draw_window, toon_drawGC,
+		sx, sy, (unsigned) w, (unsigned) h, dx, dy);
+      return;
+    }
+  }
+
+  XClearArea(toon_display, toon_draw_window, x, y, width, height, False);
+}
 
 /* Rebuild ShapeBounding so only toon pixels are visible (overlay mode). */
 static void
@@ -195,8 +301,7 @@ ToonErase(Toon *t, int n)
        * ToonDraw; clearing is unnecessary and with background None
        * would not help anyway. */
       if (!toon_overlay_mode)
-	XClearArea(toon_display, toon_draw_window, x, y,
-		   width, height, False);
+	__ToonClearRect(x, y, (unsigned) width, (unsigned) height);
       if (toon_expose && !toon_overlay_mode) {
 	if (x < minx) {
 	  minx = x;

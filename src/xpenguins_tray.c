@@ -48,7 +48,15 @@ static char tray_docked;
 static char tray_enabled;
 static char tray_embedded;
 
-/* Query tray manager for preferred visual; fall back to default. */
+/* Prefer the screen default visual for the tray icon.
+ *
+ * XFCE (and others) may advertise an ARGB _NET_SYSTEM_TRAY_VISUAL.
+ * Without XRender we cannot paint that correctly: XFillRectangle /
+ * Xpm leave alpha at 0 and the panel composites the icon away.
+ * The system-tray spec requires the embedder to match the *icon*
+ * visual, so a default-depth (opaque) icon is still docked correctly
+ * and stays visible.  Log the manager visual when verbose for
+ * diagnostics. */
 static void
 __tray_pick_visual(int screen)
 {
@@ -57,8 +65,6 @@ __tray_pick_visual(int screen)
   unsigned long nitems = 0, bytes_after = 0;
   unsigned char *prop = NULL;
   VisualID vid = 0;
-  XVisualInfo template, *visinfo;
-  int nvis = 0;
 
   tray_visual = DefaultVisual(tray_dpy, screen);
   tray_depth = DefaultDepth(tray_dpy, screen);
@@ -78,26 +84,26 @@ __tray_pick_visual(int screen)
 
   vid = *(VisualID *) (void *) prop;
   XFree(prop);
-  if (vid == 0 || vid == tray_visual->visualid)
-    return;
-
-  template.visualid = vid;
-  visinfo = XGetVisualInfo(tray_dpy, VisualIDMask, &template, &nvis);
-  if (!visinfo || nvis < 1) {
-    if (visinfo)
+  if (xpenguins_verbose && vid != 0) {
+    XVisualInfo template, *visinfo;
+    int nvis = 0;
+    template.visualid = vid;
+    visinfo = XGetVisualInfo(tray_dpy, VisualIDMask, &template, &nvis);
+    if (visinfo && nvis > 0) {
+      fprintf(stderr,
+	      "[xpenguins-ng] tray: manager offers visual 0x%lx depth %d "
+	      "(using default depth %d instead; no XRender)\n",
+	      (unsigned long) vid, visinfo[0].depth, tray_depth);
       XFree(visinfo);
-    return;
+    } else {
+      fprintf(stderr,
+	      "[xpenguins-ng] tray: manager offers visual 0x%lx "
+	      "(using default depth %d)\n",
+	      (unsigned long) vid, tray_depth);
+      if (visinfo)
+	XFree(visinfo);
+    }
   }
-
-  tray_visual = visinfo[0].visual;
-  tray_depth = visinfo[0].depth;
-  tray_cmap = XCreateColormap(tray_dpy, RootWindow(tray_dpy, screen),
-			      tray_visual, AllocNone);
-  if (xpenguins_verbose)
-    fprintf(stderr,
-	    "[xpenguins-ng] tray: using manager visual 0x%lx depth %d\n",
-	    (unsigned long) vid, tray_depth);
-  XFree(visinfo);
 }
 
 
@@ -299,8 +305,17 @@ __tray_paint(void)
   XCopyArea(tray_dpy, icon_pm, tray_win, tray_gc,
 	    0, 0, (unsigned) side, (unsigned) side, x, y);
 
-  /* BackgroundPixmap keeps the icon visible when Expose is sparse. */
-  XSetWindowBackgroundPixmap(tray_dpy, tray_win, icon_pm);
+  /* BackgroundPixmap keeps the icon visible when Expose is sparse.
+   * Only attach it when sizes match; a mismatched pixmap is undefined
+   * on some servers and XFCE can leave the slot blank. */
+  if (tray_w == side && tray_h == side)
+    XSetWindowBackgroundPixmap(tray_dpy, tray_win, icon_pm);
+  else
+    XSetWindowBackgroundPixmap(tray_dpy, tray_win, None);
+  XClearWindow(tray_dpy, tray_win);
+  /* Clear wiped the copy; paint again on top of the background. */
+  XCopyArea(tray_dpy, icon_pm, tray_win, tray_gc,
+	    0, 0, (unsigned) side, (unsigned) side, x, y);
   XFlush(tray_dpy);
 }
 
@@ -343,10 +358,11 @@ __tray_send_dock(void)
   ev.xclient.data.l[2] = (long) tray_win;
   XSendEvent(tray_dpy, tray_owner, False, NoEventMask, &ev);
   XSync(tray_dpy, False);
-  /* Some trays never map us unless we map ourselves after dock. */
-  XMapWindow(tray_dpy, tray_win);
+  /* Leave unmapped until XEMBED_EMBEDDED_NOTIFY / MapNotify from the
+   * tray.  Early MapWindow caused XFCE to place us at a transient
+   * geometry then unmap, and the second map sometimes left a blank
+   * slot.  XEMBED_MAPPED in _XEMBED_INFO tells the manager to map us. */
   tray_docked = 1;
-  __tray_paint();
   return 0;
 }
 
@@ -461,6 +477,7 @@ xpenguins_tray_event(XEvent *event)
       tray_embedded = 1;
       if (xpenguins_verbose)
 	fprintf(stderr, "[xpenguins-ng] tray: XEMBED_EMBEDDED_NOTIFY\n");
+      XMapWindow(tray_dpy, tray_win);
       __tray_paint();
     }
     return 0;

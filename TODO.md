@@ -175,3 +175,11 @@ and the 32×32 BackgroundPixmap did not match the 22×22 slot.
   - Build TrueColor pixels with full opacity via channel masks
   - XGetImage/XPutImage pass to force alpha on strip + icon pixmap
   - Opaque background_pixel / paint fill for depth-32 windows
+
+### Done (continued)
+
+- [x] Tray still blank with ARGB manager visual + forced alpha
+  - Prefer default (opaque) screen visual instead of ARGB without XRender
+  - Manager must match icon visual per system-tray spec; default works
+  - Defer XMapWindow until XEMBED_EMBEDDED_NOTIFY
+  - Only set BackgroundPixmap when pixmap size matches window size

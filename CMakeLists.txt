@@ -7,6 +7,12 @@ project(xpenguins-ng VERSION 3.0 LANGUAGES C)
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
+# Nix/cmake hooks may pass these; touch them so CMake does not warn
+# about unused manually-specified variables.
+set(_xpenguins_cmake_unused
+  "${BUILD_TESTING}${CMAKE_CXX_COMPILER}${CMAKE_EXPORT_NO_PACKAGE_REGISTRY}")
+unset(_xpenguins_cmake_unused)
+
 include(GNUInstallDirs)
 
 find_package(X11 REQUIRED)

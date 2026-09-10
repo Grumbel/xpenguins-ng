@@ -30,6 +30,9 @@
               libxpm
               libxext
               libxfixes
+              # libX11.pc Requires: xcb — silence pkg-config noise
+              libxcb
+              libxdmcp
             ];
           };
         };

@@ -540,7 +540,8 @@ LoadAverage()
   float load = -1;
 
   if (loadfile) {
-    fscanf(loadfile, "%f", &load);
+    if (fscanf(loadfile, "%f", &load) != 1)
+      load = -1;
     fclose(loadfile);
   }
 

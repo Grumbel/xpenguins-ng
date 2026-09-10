@@ -266,3 +266,10 @@ and the 32×32 BackgroundPixmap did not match the 22×22 slot.
 - [x] Tray theme cycle always reloaded first list entry / printed "normal"
   - theme->name[] is genus name from config, not directory name
   - Track list name via xpenguins_set_theme_list_name()
+
+### Done (continued)
+
+- [x] Build warning cleanup
+  - Check fscanf return in LoadAverage
+  - flake: add libxcb so pkg-config can resolve x11 Requires
+  - CMake: touch Nix-passed unused -D variables

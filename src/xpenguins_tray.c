@@ -178,6 +178,17 @@ __tray_scale_frame(Pixmap src_color, Pixmap src_mask,
     }
   }
 
+  co->byte_order = ImageByteOrder(tray_dpy);
+  co->bitmap_bit_order = BitmapBitOrder(tray_dpy);
+  co->bitmap_unit = BitmapUnit(tray_dpy);
+  co->bitmap_pad = BitmapPad(tray_dpy);
+  if (mo) {
+    mo->byte_order = ImageByteOrder(tray_dpy);
+    mo->bitmap_bit_order = BitmapBitOrder(tray_dpy);
+    mo->bitmap_unit = BitmapUnit(tray_dpy);
+    mo->bitmap_pad = BitmapPad(tray_dpy);
+  }
+
   for (y = 0; y < out_h; y++) {
     sy = (y * src_edge) / out_h;
     if (sy >= src_edge)
@@ -188,6 +199,7 @@ __tray_scale_frame(Pixmap src_color, Pixmap src_mask,
 	sx = src_edge - 1;
       XPutPixel(co, x, y, XGetPixel(ci, sx, sy));
       if (mo) {
+	/* Depth-1 XGetPixel can return plane masks; any non-zero = opaque. */
 	unsigned long m = mi ? XGetPixel(mi, sx, sy) : 1;
 	XPutPixel(mo, x, y, m ? 1 : 0);
       }
@@ -295,6 +307,28 @@ __tray_build_icon(int width, int height)
     XFreeGC(tray_dpy, mask_gc);
   }
 
+  /* Auto-detect mask polarity: the centre of the scaled frame should be
+   * opaque (penguin body).  If it is clear, invert the whole mask. */
+  if (icon_mask != None && out > 2) {
+    XImage *probe = XGetImage(tray_dpy, icon_mask, dx + out / 2, dy + out / 2,
+			      1, 1, 1, XYPixmap);
+    int centre_set = 0;
+    if (probe) {
+      centre_set = XGetPixel(probe, 0, 0) != 0;
+      XDestroyImage(probe);
+    }
+    if (!centre_set) {
+      mask_gc = XCreateGC(tray_dpy, icon_mask, 0, NULL);
+      XSetFunction(tray_dpy, mask_gc, GXcopyInverted);
+      XCopyArea(tray_dpy, icon_mask, icon_mask, mask_gc,
+		0, 0, (unsigned) icon_w, (unsigned) icon_h, 0, 0);
+      XSetFunction(tray_dpy, mask_gc, GXcopy);
+      XFreeGC(tray_dpy, mask_gc);
+      if (xpenguins_verbose)
+	fprintf(stderr, "[xpenguins-ng] tray: inverted mask polarity\n");
+    }
+  }
+
   if (xpenguins_verbose)
     fprintf(stderr, "[xpenguins-ng] tray: built icon %dx%d (frame %d -> %d)\n",
 	    icon_w, icon_h, frame, out);
@@ -325,11 +359,12 @@ __tray_paint(void)
   if (icon_pm == None || tray_gc == None)
     return;
 
-  /* Panel colour shows through (ParentRelative) where we do not draw. */
+  /* Prefer ParentRelative so the panel shows around the sprite.  Some
+   * trays ignore it; XShape + clip-blit still avoid painting a black
+   * rectangle over the whole slot. */
   XSetWindowBackgroundPixmap(tray_dpy, tray_win, ParentRelative);
   XClearWindow(tray_dpy, tray_win);
 
-  /* Clip to the scaled mask so black underlay never reaches the window. */
   if (icon_mask != None) {
     XSetClipMask(tray_dpy, tray_gc, icon_mask);
     XSetClipOrigin(tray_dpy, tray_gc, 0, 0);

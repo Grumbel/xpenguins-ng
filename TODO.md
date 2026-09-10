@@ -207,3 +207,10 @@ and the 32×32 BackgroundPixmap did not match the 22×22 slot.
   - ParentRelative clear + GC clip mask so only penguin pixels are
     blitted (black underlay never reaches the window)
   - XShape still applied when the extension is present
+
+### Done (continued)
+
+- [x] Tray colours inverted / black background after scale
+  - Fix XImage byte/bit order when scaling
+  - Auto-detect 1-bit mask polarity (centre pixel of frame must be opaque)
+  - Invert mask if needed so ClipMask + XShape draw the penguin, not the hole

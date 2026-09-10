@@ -21,9 +21,9 @@ package are **Penguins**, **Big Penguins** (50% larger), **Classic Penguins**
 available from the XPenguins site as the separate `xpenguins_themes` package
 (Simpsons, Sonic, Lemmings, Winnie the Pooh, and others).
 
-On a **compositing** window manager the default drawing path is a **shaped
-overlay** so sprites stay visible without painting the root window. Use
-`--no-overlay` / `--root` for the classic desktop/root drawing path.
+The default drawing path is a **shaped overlay** window so sprites stay
+visible without painting the root (XShape does not need a compositor).
+Use `--no-overlay` / `--root` for the classic desktop/root drawing path.
 
 ```bash
 xpenguins-ng
@@ -45,8 +45,8 @@ adjacent frames.
 
 | Option | Behaviour |
 |--------|-----------|
-| *(default)* | Shaped overlay when a compositor is detected, else classic |
-| `--overlay` | Always use the transparent shaped overlay |
+| *(default)* | Shaped overlay (XShape; works with or without a compositor) |
+| `--overlay` | Same as default (explicit) |
 | `--no-overlay` / `--root` | Classic drawing on the desktop/root window |
 | `--id 0x…` | Draw on a specific window (classic path) |
 | `--debug` | Window-map / spawn diagnostics on stderr |
@@ -90,7 +90,7 @@ for theme art is recorded in `REUSE.toml` from each theme’s `about` file
 
 Historically, KDE, CDE, Enlightenment, Nautilus, and others placed a large
 window over the root window; XPenguins tried to find that window and draw
-to it. On **modern compositors** the default is the shaped overlay path.
+to it. The default is the shaped overlay path (no compositor required).
 If you still see nothing:
 
 - Try `xpenguins-ng --overlay` or `xpenguins-ng --no-overlay`

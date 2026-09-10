@@ -140,7 +140,7 @@ extern Window toon_parent; /* the parent window of all the client windows */
 extern Window toon_draw_window; /* drawable for toon pixels (root or overlay) */
 extern Window toon_root_override; /* override both toon_root and toon_parent */
 extern char toon_overlay_mode; /* 1 if using transparent overlay */
-extern char toon_overlay_preference; /* -1 auto, 0 classic, 1 overlay */
+extern char toon_overlay_preference; /* 0 classic (--root), 1 overlay (default) */
 extern int toon_x_offset, toon_y_offset; /* toon_root relative to toon_parent */
 extern int toon_display_width, toon_display_height;
 extern GC toon_drawGC;

@@ -28,10 +28,10 @@ Window toon_root;
 Window toon_parent;
 Window toon_draw_window = 0;
 Window toon_root_override = 0;
-/* 0 = classic root drawing, 1 = transparent overlay */
+/* 0 = classic root drawing, 1 = shaped overlay */
 char toon_overlay_mode = 0;
-/* -1 = auto, 0 = force classic, 1 = force overlay */
-char toon_overlay_preference = -1;
+/* 0 = classic (--root), 1 = shaped overlay (default; XShape needs no compositor) */
+char toon_overlay_preference = 1;
 int toon_x_offset = 0;
 int toon_y_offset = 0;
 int toon_display_width, toon_display_height;

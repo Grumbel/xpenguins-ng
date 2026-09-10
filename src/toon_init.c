@@ -106,12 +106,13 @@ ToonSetupDrawWindow(void)
     return 0;
   }
 
-  if (toon_overlay_preference > 0)
-    want_overlay = 1;
-  else if (toon_overlay_preference == 0)
+  /* Default is shaped overlay.  XShape does not require a compositor;
+   * classic root drawing is only used when --root / --no-overlay (or
+   * --id) is given. */
+  if (toon_overlay_preference == 0)
     want_overlay = 0;
   else
-    want_overlay = __ToonCompositorRunning(toon_display, screen);
+    want_overlay = 1;
 
   if (!want_overlay) {
     snprintf(toon_message, TOON_MESSAGE_LENGTH,

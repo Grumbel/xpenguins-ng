@@ -242,3 +242,9 @@ and the 32×32 BackgroundPixmap did not match the 22×22 slot.
 - [x] Gate `[xpenguins-ng] tray:` diagnostics on `--verbose`
   - `xpenguins_verbose` default was 1 so tray logs always appeared
   - Default is now 0; enable with `--verbose` (still disable with `-q`)
+
+### Done (continued)
+
+- [x] Default to shaped overlay always (XShape needs no compositor)
+  - `toon_overlay_preference` default 1; `--root` / `--no-overlay` for classic
+  - Stop auto-selecting classic when `_NET_WM_CM_Sn` is absent

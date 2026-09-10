@@ -131,10 +131,29 @@ fragile under modern desktops, which is why the shaped overlay is the default.
 - **`data/`** — desktop file and hicolor icons
 - **`flake.nix`** — Nix build from in-tree CMake sources
 
-## Credits
+## Acknowledgements
 
-Original XPenguins: Robin Hogan.  
-xpenguins-ng maintenance and modern X11 work: Ingo Ruhnke.  
 Inspiration: Rick Jansen \<rick@sara.nl\> and the classic **xsnow**.
 
-See `AUTHORS` and the SPDX headers in individual files.
+Many penguin images came from **Pingus** (http://pingus.seul.org/), by
+Joel Fauche \<joel.fauche@wanadoo.fr\> and Craig Timpany
+\<timpany@es.co.nz\>. Rob Gietema \<tycoon@planetdescent.com\> contributed
+images used in the default theme.
+
+## Authors
+
+- Robin Hogan \<R.J.Hogan@reading.ac.uk\> — original XPenguins
+- Ingo Ruhnke \<grumbel@gmail.com\> — xpenguins-ng 3.0
+
+Original homepage: http://xpenguins.seul.org/
+
+Related modernisation (GTK3 GUI / transparent window):  
+https://www.ratrabbit.nl/ratrabbit/software/xpenguins
+
+See also `AUTHORS` and the SPDX headers in individual files.
+
+## See also
+
+Michael Vines rewrote an older version for Windows as **WinPenguins**
+(historical link from the 2.2 README:
+http://neomueller.org/~isamu/winpenguins/).

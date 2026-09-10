@@ -318,6 +318,9 @@ main (int argc, char **argv)
     }
     exit(2);
   }
+  /* List name for tray theme cycling (genus names are not unique). */
+  if (theme_names[0])
+    xpenguins_set_theme_list_name(theme_names[0]);
   free(theme_names);
 
   if (!sleep_usec) {

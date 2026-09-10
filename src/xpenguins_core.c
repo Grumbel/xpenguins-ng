@@ -41,6 +41,27 @@ char xpenguins_blood = 1; /* 0 = suitable for children */
 char xpenguins_angels = 1; /* 0 = no angels */
 char xpenguins_specify_number = 0;
 
+/* Theme directory / list name for cycle (not the genus name in config). */
+static char xpenguins_theme_list_name[256];
+
+void
+xpenguins_set_theme_list_name(const char *name)
+{
+  if (!name || !*name) {
+    xpenguins_theme_list_name[0] = '\0';
+    return;
+  }
+  snprintf(xpenguins_theme_list_name, sizeof(xpenguins_theme_list_name),
+	   "%s", name);
+  /* Normalise underscores to spaces so we match list_themes output. */
+  {
+    char *p;
+    for (p = xpenguins_theme_list_name; *p; p++)
+      if (*p == '_')
+	*p = ' ';
+  }
+}
+
 /* Start a new penguin from the top of the screen */
 static
 void
@@ -735,27 +756,16 @@ xpenguins_cycle_theme(XPenguinsTheme *theme)
     return _("No themes available");
   }
 
-  if (theme->name && theme->ngenera > 0 && theme->name[0])
-    current_name = theme->name[0];
+  /* theme->name[] is the genus name from config (e.g. "normal"), not
+   * the theme directory.  Track the list name separately. */
+  current_name = xpenguins_theme_list_name[0] ? xpenguins_theme_list_name
+    : NULL;
 
   for (i = 0; i < nthemes; i++) {
-    if (current_name && names[i]) {
-      const char *a = current_name, *b = names[i];
-      int same = 1;
-      while (*a && *b) {
-	char ca = (*a == '_') ? ' ' : *a;
-	char cb = (*b == '_') ? ' ' : *b;
-	if (ca != cb) {
-	  same = 0;
-	  break;
-	}
-	a++;
-	b++;
-      }
-      if (same && !*a && !*b) {
-	cur = i;
-	break;
-      }
+    if (current_name && names[i]
+	&& strcmp(current_name, names[i]) == 0) {
+      cur = i;
+      break;
     }
   }
   next = (cur < 0) ? 0 : (cur + 1) % nthemes;
@@ -815,8 +825,10 @@ xpenguins_cycle_theme(XPenguinsTheme *theme)
     penguin[i].mapped = 0;
   }
 
-  if (xpenguins_verbose && theme->name && theme->name[0])
-    fprintf(stderr, "[xpenguins-ng] theme: %s\n", theme->name[0]);
+  xpenguins_set_theme_list_name(names[next]);
+
+  if (xpenguins_verbose)
+    fprintf(stderr, "[xpenguins-ng] theme: %s\n", names[next]);
 
   xpenguins_free_list(names);
   return NULL;

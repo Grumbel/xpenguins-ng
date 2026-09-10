@@ -260,3 +260,9 @@ and the 32×32 BackgroundPixmap did not match the 22×22 slot.
 - [x] Tray right-click cycles through available themes
   - Button3 -> hook return 2 -> xpenguins_cycle_theme()
   - Free server pixmaps, load next theme, reinstall, reinit toons
+
+### Done (continued)
+
+- [x] Tray theme cycle always reloaded first list entry / printed "normal"
+  - theme->name[] is genus name from config, not directory name
+  - Track list name via xpenguins_set_theme_list_name()

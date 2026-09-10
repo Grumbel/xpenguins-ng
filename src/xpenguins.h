@@ -163,6 +163,7 @@ int xpenguins_tray_init(Display *dpy);
 int xpenguins_tray_event(XEvent *event);
 /* Switch to the next installed theme; updates theme and server pixmaps. */
 char *xpenguins_cycle_theme(XPenguinsTheme *theme);
+void xpenguins_set_theme_list_name(const char *name);
 void xpenguins_tray_poll(void);
 void xpenguins_tray_fini(void);
 

@@ -137,12 +137,13 @@ ToonDraw(Toon *t, int n)
       }
 
       /*
-       * Classic path: clip to the Xpm mask so we only paint opaque
-       * pixels onto the root/desktop.
-       * Overlay path: paint the full colour frame from data->pixmap
-       * (not the mask).  ShapeBounding already limits what is visible.
+       * Always clip to the Xpm mask so only opaque sprite pixels are
+       * written.  In overlay mode ShapeBounding makes the window
+       * outline match the toons, but all toons share one pixmap: a
+       * full-rectangle XCopyArea would still stamp "transparent"
+       * (typically black) XPM pixels over any other toon underneath.
        */
-      if (!toon_overlay_mode) {
+      if (data->mask != None) {
 	XSetClipOrigin(toon_display, toon_drawGC,
 		       t->x - width * t->frame, t->y - height * direction);
 	XSetClipMask(toon_display, toon_drawGC, data->mask);
@@ -151,7 +152,7 @@ ToonDraw(Toon *t, int n)
 		toon_draw_window, toon_drawGC,
 		width * t->frame, height * direction,
 		width, height, t->x, t->y);
-      if (!toon_overlay_mode)
+      if (data->mask != None)
 	XSetClipMask(toon_display, toon_drawGC, None);
       if (!toon_overlay_mode) {
 	t->x_map = t->x;

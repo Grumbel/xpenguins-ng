@@ -214,3 +214,10 @@ and the 32×32 BackgroundPixmap did not match the 22×22 slot.
   - Fix XImage byte/bit order when scaling
   - Auto-detect 1-bit mask polarity (centre pixel of frame must be opaque)
   - Invert mask if needed so ClipMask + XShape draw the penguin, not the hole
+
+### Done (continued)
+
+- [x] Overlapping toons lose colour in transparent regions of the other
+  - Overlay path used full-rectangle XCopyArea without clip mask
+  - Transparent XPM pixels (often black) overwrote the toon underneath
+  - Always apply data->mask as GC clip when blitting (classic + overlay)

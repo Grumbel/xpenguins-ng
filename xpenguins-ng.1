@@ -10,12 +10,17 @@ is a maintained fork of XPenguins that animates cartoons (penguins by
 default) on an X11 desktop. Toons drop from the top of the screen, walk
 along the tops of windows, climb, skateboard, and so on.
 .PP
-On modern compositing window managers the default is a
+The default drawing path is a
 .B shaped overlay
-window so the sprites stay visible without drawing on the root window.
-Use
+window (XShape; no compositor required) so the sprites stay visible without
+drawing on the root window. Use
 .B \-\-no\-overlay
-for the classic root/desktop drawing path. Be careful when moving
+or
+.B \-\-root
+for the classic root/desktop drawing path. A system tray icon is shown when
+available; click it to exit. Use
+.B \-\-verbose
+for diagnostic messages. Be careful when moving
 windows: the little guys squash easily. An interrupt signal (e.g. Ctrl-C)
 makes them burst and exit.
 .PP
@@ -36,7 +41,7 @@ Do not show any gory death sequences.
 .BI "\-c " dir ", \-\-config\-dir " dir
 Look for config files and themes in this directory. The default is
 usually
-.IR /usr/share/xpenguins-ng-ng "."
+.IR /usr/share/xpenguins-ng "."
 .TP 8
 .BI "\-d " display ", \-\-display " display
 Send the toons to the specified X display. In the absence of this
@@ -118,25 +123,31 @@ pseudo file (probably just Linux). When there are no toons on the screen,
 uses only a miniscule amount of CPU time - it just wakes up every 5
 seconds to recheck the load.
 .TP
-.TP
 .B "\-\-debug"
 Print window-map and spawn diagnostics to standard error (solid
 candidates, skipped desktops, display size, relocate events).
 .TP
 .B "\-\-overlay"
-Force the transparent shaped overlay drawing path (for compositing
-window managers). By default this path is selected automatically when
-a compositing manager is detected.
+Use the shaped overlay drawing path (this is the default).
 .TP
 .B "\-\-no\-overlay, \-\-root"
-Force classic drawing on the desktop/root window even if a compositor
-is running.
+Use classic drawing on the desktop/root window.
+.TP
+.B "\-\-verbose"
+Print diagnostic messages (tray docking, drawing mode, and similar).
+.TP
+.B "\-\-no\-tray"
+Do not show a system tray icon.
 
 .SH THEMES
 The system themes are usually kept in
-.IR /usr/share/xpenguins-ng-ng/themes ", "
+.IR /usr/share/xpenguins-ng/themes ", "
 and these can be augmented or overridden by the user's themes in
-.IR $HOME/.xpenguins-ng-ng/themes "."
+.IR $XDG_DATA_HOME/xpenguins-ng/themes
+(default
+.IR $HOME/.local/share/xpenguins-ng/themes )
+and legacy
+.IR $HOME/.xpenguins-ng/themes "."
 Each theme has its own subdirectory which to be valid must contain a
 file called
 .IR config "."
@@ -170,7 +181,7 @@ rather terse description of it or you can have a look at the config
 file for the default
 .B Penguins
 theme, which is usually installed at
-.IR /usr/share/xpenguins-ng-ng/themes/Penguins/config ","
+.IR /usr/share/xpenguins-ng/themes/Penguins/config ","
 and is reasonably well commented. We'll first establish some simple
 terminology. Say you have a Farmyard theme with cows and sheep. The
 cows and sheep are types of 
@@ -385,9 +396,9 @@ the root window then the toons will erase them when they walk over
 them, although an expose event will be sent to the window every 100
 frames to redraw them.
 .SH FILES
-$HOME/.xpenguins-ng-ng/themes/*
+$HOME/.xpenguins-ng/themes/*
 .br
-/usr/share/xpenguins-ng-ng/themes/*
+/usr/share/xpenguins-ng/themes/*
 .br
 /proc/loadavg
 .br

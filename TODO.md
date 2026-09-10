@@ -248,3 +248,9 @@ and the 32×32 BackgroundPixmap did not match the 22×22 slot.
 - [x] Default to shaped overlay always (XShape needs no compositor)
   - `toon_overlay_preference` default 1; `--root` / `--no-overlay` for classic
   - Stop auto-selecting classic when `_NET_WM_CM_Sn` is absent
+
+### Done (continued)
+
+- [x] README + man page: default overlay, tray, --verbose, theme paths
+  - Fix xpenguins-ng-ng typos in the man page
+  - Document that XShape overlay does not need a compositor

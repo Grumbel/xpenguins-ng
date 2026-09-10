@@ -4,11 +4,9 @@
  */
 
 /*
- * XEmbed system tray icon.  Default (opaque) screen visual so XFCE and
- * other panels can embed us without ARGB/XRender.  ParentRelative
- * background + XShape mask so the panel shows through around the
- * bomber frame.  Icon is rebuilt to the exact slot size on configure.
- * Click = graceful exit.
+ * XEmbed system tray icon.  Default screen visual, ParentRelative
+ * background, XShape + GC clip mask, nearest-neighbour scale of the
+ * first bomber frame into the panel slot.  Click = graceful exit.
  */
 
 #include <stdio.h>
@@ -34,10 +32,10 @@
 static Display *tray_dpy;
 static Window tray_win = None;
 static Window tray_owner = None;
-static Pixmap strip_pm = None;		/* bomber strip (colour) */
-static Pixmap strip_mask = None;	/* bomber strip (bitmap mask) */
-static Pixmap icon_pm = None;		/* slot-sized pixmap to blit */
-static Pixmap icon_mask = None;		/* slot-sized shape mask */
+static Pixmap strip_pm = None;
+static Pixmap strip_mask = None;
+static Pixmap icon_pm = None;
+static Pixmap icon_mask = None;
 static GC tray_gc = None;
 static Visual *tray_visual = NULL;
 static Colormap tray_cmap = None;
@@ -52,7 +50,6 @@ static char tray_enabled;
 static char tray_embedded;
 static char tray_have_shape;
 
-/* Prefer the screen default visual (see previous commits for ARGB notes). */
 static void
 __tray_pick_visual(int screen)
 {
@@ -88,17 +85,15 @@ __tray_pick_visual(int screen)
     if (visinfo && nvis > 0) {
       fprintf(stderr,
 	      "[xpenguins-ng] tray: manager offers visual 0x%lx depth %d "
-	      "(using default depth %d; ParentRelative + XShape)\n",
+	      "(using default depth %d)\n",
 	      (unsigned long) vid, visinfo[0].depth, tray_depth);
       XFree(visinfo);
-    } else {
-      if (visinfo)
-	XFree(visinfo);
+    } else if (visinfo) {
+      XFree(visinfo);
     }
   }
 }
 
-/* Load bomber strip once (colour + 1-bit mask). */
 static void
 __tray_load_strip(void)
 {
@@ -132,11 +127,100 @@ __tray_load_strip(void)
 	    strip_w, strip_h, strip_mask != None ? " (with mask)" : "");
 }
 
-/* Build slot-sized colour pixmap + matching 1-bit shape mask. */
+/* Nearest-neighbour scale of the first strip frame into dest_w×dest_h. */
+static void
+__tray_scale_frame(Pixmap src_color, Pixmap src_mask,
+		   int src_edge, Pixmap dst_color, Pixmap dst_mask,
+		   int dest_w, int dest_h, int dx, int dy,
+		   int out_w, int out_h)
+{
+  XImage *ci = NULL, *mi = NULL, *co = NULL, *mo = NULL;
+  int x, y, sx, sy;
+  GC mask_gc;
+
+  if (src_color == None || out_w < 1 || out_h < 1)
+    return;
+
+  ci = XGetImage(tray_dpy, src_color, 0, 0, (unsigned) src_edge,
+		 (unsigned) src_edge, AllPlanes, ZPixmap);
+  if (!ci)
+    return;
+  if (src_mask != None)
+    mi = XGetImage(tray_dpy, src_mask, 0, 0, (unsigned) src_edge,
+		   (unsigned) src_edge, 1, XYPixmap);
+
+  co = XCreateImage(tray_dpy, tray_visual, (unsigned) tray_depth, ZPixmap, 0,
+		    NULL, (unsigned) out_w, (unsigned) out_h, 32, 0);
+  if (!co) {
+    XDestroyImage(ci);
+    if (mi)
+      XDestroyImage(mi);
+    return;
+  }
+  co->data = calloc((size_t) co->bytes_per_line * (size_t) out_h, 1);
+  if (!co->data) {
+    XDestroyImage(ci);
+    if (mi)
+      XDestroyImage(mi);
+    XFree(co);
+    return;
+  }
+
+  if (dst_mask != None) {
+    mo = XCreateImage(tray_dpy, tray_visual, 1, XYBitmap, 0, NULL,
+		      (unsigned) out_w, (unsigned) out_h, 8, 0);
+    if (mo) {
+      mo->data = calloc((size_t) mo->bytes_per_line * (size_t) out_h, 1);
+      if (!mo->data) {
+	XFree(mo);
+	mo = NULL;
+      }
+    }
+  }
+
+  for (y = 0; y < out_h; y++) {
+    sy = (y * src_edge) / out_h;
+    if (sy >= src_edge)
+      sy = src_edge - 1;
+    for (x = 0; x < out_w; x++) {
+      sx = (x * src_edge) / out_w;
+      if (sx >= src_edge)
+	sx = src_edge - 1;
+      XPutPixel(co, x, y, XGetPixel(ci, sx, sy));
+      if (mo) {
+	unsigned long m = mi ? XGetPixel(mi, sx, sy) : 1;
+	XPutPixel(mo, x, y, m ? 1 : 0);
+      }
+    }
+  }
+
+  XPutImage(tray_dpy, dst_color, tray_gc, co, 0, 0, dx, dy,
+	    (unsigned) out_w, (unsigned) out_h);
+
+  if (mo && dst_mask != None) {
+    mask_gc = XCreateGC(tray_dpy, dst_mask, 0, NULL);
+    XPutImage(tray_dpy, dst_mask, mask_gc, mo, 0, 0, dx, dy,
+	      (unsigned) out_w, (unsigned) out_h);
+    XFreeGC(tray_dpy, mask_gc);
+  }
+
+  XDestroyImage(ci);
+  if (mi)
+    XDestroyImage(mi);
+  free(co->data);
+  co->data = NULL;
+  XDestroyImage(co);
+  if (mo) {
+    free(mo->data);
+    mo->data = NULL;
+    XDestroyImage(mo);
+  }
+}
+
 static int
 __tray_build_icon(int width, int height)
 {
-  int frame, dx, dy, copy_w, copy_h;
+  int frame, out, dx, dy;
   GC mask_gc;
 
   if (width < 1)
@@ -162,44 +246,58 @@ __tray_build_icon(int width, int height)
   if (tray_gc == None)
     tray_gc = XCreateGC(tray_dpy, tray_win, 0, NULL);
 
-  /* Fill under the sprite; shape mask hides outside the bomber frame. */
+  /* Transparent underlay: we never blit this; ParentRelative clear
+   * shows the panel.  Black is only a safety fill. */
   XSetForeground(tray_dpy, tray_gc,
 		 BlackPixel(tray_dpy, DefaultScreen(tray_dpy)));
   XFillRectangle(tray_dpy, icon_pm, tray_gc, 0, 0,
 		 (unsigned) icon_w, (unsigned) icon_h);
 
-  frame = (strip_h > 0) ? strip_h : 24;
-  copy_w = frame < icon_w ? frame : icon_w;
-  copy_h = frame < icon_h ? frame : icon_h;
-  dx = (icon_w - copy_w) / 2;
-  dy = (icon_h - copy_h) / 2;
-
-  if (strip_pm != None && strip_h > 0) {
-    XCopyArea(tray_dpy, strip_pm, icon_pm, tray_gc,
-	      0, 0, (unsigned) copy_w, (unsigned) copy_h, dx, dy);
-  } else {
-    XSetForeground(tray_dpy, tray_gc,
-		   WhitePixel(tray_dpy, DefaultScreen(tray_dpy)));
-    XDrawLine(tray_dpy, icon_pm, tray_gc, 3, 3, icon_w - 4, icon_h - 4);
-    XDrawLine(tray_dpy, icon_pm, tray_gc, icon_w - 4, 3, 3, icon_h - 4);
-  }
-
-  /* 1-bit mask: empty, then copy first-frame mask centred. */
   icon_mask = XCreatePixmap(tray_dpy, tray_win, (unsigned) icon_w,
 			    (unsigned) icon_h, 1);
   mask_gc = XCreateGC(tray_dpy, icon_mask, 0, NULL);
   XSetForeground(tray_dpy, mask_gc, 0);
   XFillRectangle(tray_dpy, icon_mask, mask_gc, 0, 0,
 		 (unsigned) icon_w, (unsigned) icon_h);
-  if (strip_mask != None && strip_h > 0) {
-    XCopyArea(tray_dpy, strip_mask, icon_mask, mask_gc,
-	      0, 0, (unsigned) copy_w, (unsigned) copy_h, dx, dy);
+  XFreeGC(tray_dpy, mask_gc);
+
+  frame = (strip_h > 0) ? strip_h : 24;
+  /* Fit the square frame inside the slot, preserving aspect. */
+  out = icon_w < icon_h ? icon_w : icon_h;
+  if (out < 1)
+    out = 1;
+  dx = (icon_w - out) / 2;
+  dy = (icon_h - out) / 2;
+
+  if (strip_pm != None && strip_h > 0) {
+    if (out == frame) {
+      XCopyArea(tray_dpy, strip_pm, icon_pm, tray_gc,
+		0, 0, (unsigned) frame, (unsigned) frame, dx, dy);
+      if (strip_mask != None) {
+	mask_gc = XCreateGC(tray_dpy, icon_mask, 0, NULL);
+	XCopyArea(tray_dpy, strip_mask, icon_mask, mask_gc,
+		  0, 0, (unsigned) frame, (unsigned) frame, dx, dy);
+	XFreeGC(tray_dpy, mask_gc);
+      }
+    } else {
+      __tray_scale_frame(strip_pm, strip_mask, frame, icon_pm, icon_mask,
+			 icon_w, icon_h, dx, dy, out, out);
+    }
   } else {
+    XSetForeground(tray_dpy, tray_gc,
+		   WhitePixel(tray_dpy, DefaultScreen(tray_dpy)));
+    XDrawLine(tray_dpy, icon_pm, tray_gc, 3, 3, icon_w - 4, icon_h - 4);
+    XDrawLine(tray_dpy, icon_pm, tray_gc, icon_w - 4, 3, 3, icon_h - 4);
+    mask_gc = XCreateGC(tray_dpy, icon_mask, 0, NULL);
     XSetForeground(tray_dpy, mask_gc, 1);
     XFillRectangle(tray_dpy, icon_mask, mask_gc, 0, 0,
 		   (unsigned) icon_w, (unsigned) icon_h);
+    XFreeGC(tray_dpy, mask_gc);
   }
-  XFreeGC(tray_dpy, mask_gc);
+
+  if (xpenguins_verbose)
+    fprintf(stderr, "[xpenguins-ng] tray: built icon %dx%d (frame %d -> %d)\n",
+	    icon_w, icon_h, frame, out);
   return 0;
 }
 
@@ -215,8 +313,6 @@ __tray_apply_shape(void)
 static void
 __tray_paint(void)
 {
-  int x, y, side_w, side_h;
-
   if (!tray_dpy || tray_win == None)
     return;
 
@@ -229,17 +325,19 @@ __tray_paint(void)
   if (icon_pm == None || tray_gc == None)
     return;
 
-  side_w = icon_w;
-  side_h = icon_h;
-  x = (tray_w > side_w) ? (tray_w - side_w) / 2 : 0;
-  y = (tray_h > side_h) ? (tray_h - side_h) / 2 : 0;
-
-  /* ParentRelative: panel colour shows through where the shape is empty. */
+  /* Panel colour shows through (ParentRelative) where we do not draw. */
   XSetWindowBackgroundPixmap(tray_dpy, tray_win, ParentRelative);
   XClearWindow(tray_dpy, tray_win);
 
+  /* Clip to the scaled mask so black underlay never reaches the window. */
+  if (icon_mask != None) {
+    XSetClipMask(tray_dpy, tray_gc, icon_mask);
+    XSetClipOrigin(tray_dpy, tray_gc, 0, 0);
+  }
   XCopyArea(tray_dpy, icon_pm, tray_win, tray_gc,
-	    0, 0, (unsigned) side_w, (unsigned) side_h, x, y);
+	    0, 0, (unsigned) icon_w, (unsigned) icon_h, 0, 0);
+  XSetClipMask(tray_dpy, tray_gc, None);
+
   __tray_apply_shape();
   XFlush(tray_dpy);
 }
@@ -266,7 +364,7 @@ __tray_send_dock(void)
   memset(&hints, 0, sizeof(hints));
   hints.flags = PMinSize | PBaseSize | PWinGravity;
   hints.min_width = hints.min_height = 16;
-  hints.base_width = hints.base_height = 24;
+  hints.base_width = hints.base_height = 22;
   hints.win_gravity = StaticGravity;
   XSetWMNormalHints(tray_dpy, tray_win, &hints);
 
@@ -282,7 +380,6 @@ __tray_send_dock(void)
   ev.xclient.data.l[2] = (long) tray_win;
   XSendEvent(tray_dpy, tray_owner, False, NoEventMask, &ev);
   XSync(tray_dpy, False);
-  /* Leave unmapped until XEMBED_EMBEDDED_NOTIFY. */
   tray_docked = 1;
   return 0;
 }
@@ -338,7 +435,7 @@ xpenguins_tray_init(Display *dpy)
     | CWEventMask | CWBitGravity;
 
   tray_win = XCreateWindow(dpy, RootWindow(dpy, screen),
-			   0, 0, 24, 24, 0,
+			   0, 0, 22, 22, 0,
 			   tray_depth, InputOutput,
 			   tray_visual, valuemask, &swa);
   if (!tray_win)
@@ -350,16 +447,15 @@ xpenguins_tray_init(Display *dpy)
   XStoreName(dpy, tray_win, title);
 
   __tray_set_xembed_info();
-  __tray_build_icon(24, 24);
+  __tray_build_icon(22, 22);
 
   if (tray_owner != None) {
     __tray_send_dock();
     if (xpenguins_verbose)
       fprintf(stderr,
-	      "[xpenguins-ng] tray: docked on 0x%lx, win 0x%lx, "
-	      "icon %dx%d (ParentRelative + shape; click to exit)\n",
-	      (unsigned long) tray_owner, (unsigned long) tray_win,
-	      icon_w, icon_h);
+	      "[xpenguins-ng] tray: docked on 0x%lx, win 0x%lx "
+	      "(scaled + ParentRelative + shape; click to exit)\n",
+	      (unsigned long) tray_owner, (unsigned long) tray_win);
   } else if (xpenguins_verbose) {
     fprintf(stderr, "[xpenguins-ng] tray: no manager for %s yet\n", selname);
   }

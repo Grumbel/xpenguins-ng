@@ -198,3 +198,12 @@ and the 32×32 BackgroundPixmap did not match the 22×22 slot.
   - toon_exit_requested stayed set; main loop treated every frame as
     another interrupt and broke on interupts > 1
   - Clear toon_exit_requested after consuming it (like ToonSignal)
+
+### Done (continued)
+
+- [x] Tray icon still cropped / black background on XFCE
+  - Nearest-neighbour scale of 32×32 bomber frame into the real slot
+    (e.g. 22×22) instead of clipping the top-left
+  - ParentRelative clear + GC clip mask so only penguin pixels are
+    blitted (black underlay never reaches the window)
+  - XShape still applied when the extension is present

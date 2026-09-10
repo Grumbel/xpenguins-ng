@@ -107,8 +107,9 @@ See `INSTALL` for more detail.
 **Tray icon missing or odd**
 
 - Ensure a status tray / notification area plugin is on the panel (XFCE, etc.).
-- Run with `--verbose` to see docking / XEmbed messages.
-- Click the icon for a graceful exit (same death animation as Ctrl-C).
+- Run with `--verbose` to see docking / XEmbed messages and theme names when cycling.
+- **Left-click** the icon for a graceful exit (same death animation as Ctrl-C).
+- **Right-click** advances to the next installed theme.
 
 **Window tops ignored / wrong**
 

@@ -134,10 +134,16 @@ Use the shaped overlay drawing path (this is the default).
 Use classic drawing on the desktop/root window.
 .TP
 .B "\-\-verbose"
-Print diagnostic messages (tray docking, drawing mode, and similar).
+Print diagnostic messages (tray docking, drawing mode, theme cycle
+names, and similar). Default is quiet; use
+.B \-q
+to force quiet if messages are enabled.
 .TP
 .B "\-\-no\-tray"
-Do not show a system tray icon.
+Do not show a system tray icon. When the tray is enabled, left-click
+exits with the death animation; right-click cycles through the themes
+returned by
+.BR \-\-list\-themes .
 
 .SH THEMES
 The system themes are usually kept in

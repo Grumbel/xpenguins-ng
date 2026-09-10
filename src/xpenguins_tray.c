@@ -344,6 +344,39 @@ __tray_apply_shape(void)
 		    ShapeSet);
 }
 
+/* Fill the tray window with whatever the panel is showing behind us.
+ * ParentRelative often fails after XEmbed reparent; copying from the
+ * parent drawable is reliable and removes leftover junk. */
+static void
+__tray_clear_slot(void)
+{
+  Window root = None, parent = None, *children = NULL;
+  unsigned int nchildren = 0;
+  int px = 0, py = 0;
+  Window child = None;
+  int w = tray_w > 0 ? tray_w : icon_w;
+  int h = tray_h > 0 ? tray_h : icon_h;
+
+  if (w < 1 || h < 1 || tray_gc == None)
+    return;
+
+  if (XQueryTree(tray_dpy, tray_win, &root, &parent, &children, &nchildren)) {
+    if (children)
+      XFree(children);
+    if (parent != None && parent != root) {
+      if (XTranslateCoordinates(tray_dpy, tray_win, parent, 0, 0,
+				&px, &py, &child)) {
+	XCopyArea(tray_dpy, parent, tray_win, tray_gc,
+		  px, py, (unsigned) w, (unsigned) h, 0, 0);
+	return;
+      }
+    }
+  }
+
+  XSetWindowBackgroundPixmap(tray_dpy, tray_win, ParentRelative);
+  XClearWindow(tray_dpy, tray_win);
+}
+
 static void
 __tray_paint(void)
 {
@@ -359,11 +392,10 @@ __tray_paint(void)
   if (icon_pm == None || tray_gc == None)
     return;
 
-  /* Prefer ParentRelative so the panel shows around the sprite.  Some
-   * trays ignore it; XShape + clip-blit still avoid painting a black
-   * rectangle over the whole slot. */
-  XSetWindowBackgroundPixmap(tray_dpy, tray_win, ParentRelative);
-  XClearWindow(tray_dpy, tray_win);
+  /* 1) Clear the whole slot to the panel contents (no leftover junk).
+   * 2) Clip-blit only opaque penguin pixels on top.
+   * 3) Shape so input/hit-testing matches the sprite. */
+  __tray_clear_slot();
 
   if (icon_mask != None) {
     XSetClipMask(tray_dpy, tray_gc, icon_mask);

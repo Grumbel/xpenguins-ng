@@ -229,3 +229,10 @@ and the 32×32 BackgroundPixmap did not match the 22×22 slot.
     wallpaper into a pixmap and set _XROOTPMAP_ID instead
   - Erase copies from _XROOTPMAP_ID / ESETROOT_PMAP_ID when present
   - Fall back to XClearArea if no root pixmap is published
+
+### Done (continued)
+
+- [x] Tray icon still showed junk behind the penguin
+  - ParentRelative clear is unreliable after XEmbed reparent on XFCE
+  - Clear slot by XCopyArea from the parent panel under our position
+  - Then clip-blit only opaque penguin pixels; apply XShape after

@@ -362,6 +362,15 @@ main (int argc, char **argv)
    if (interupts && xpenguins_verbose) {
       fprintf(stderr, ".");
     }
+    if (toon_theme_cycle_requested) {
+      char *cycle_err;
+      toon_theme_cycle_requested = 0;
+      cycle_err = xpenguins_cycle_theme(&theme);
+      if (cycle_err)
+	fprintf(stderr, _("Theme cycle failed: %s\n"), cycle_err);
+      else
+	sleep_usec = 1000.0 * theme.delay;
+    }
     if (toon_exit_requested || ToonSignal()) {
       /* Edge-trigger: tray click latches toon_exit_requested; clear it
        * so the next frames are not treated as a second interrupt
@@ -447,6 +456,7 @@ ShowUsage(char **argv)
 	    "  -s, --squish                      kill penguins with mouse\n"
 	    "      --debug                       window-map / spawn diagnostics\n"
 	    "      --no-tray                     do not show a system tray icon\n"
+	    "                                 (left-click exit, right-click next theme)\n"
 	    "      --overlay                     use shaped overlay (default)\n"
 	    "      --no-overlay, --root          classic root/desktop drawing\n"
 	    "      --all                         Run all available themes simultaneously\n"

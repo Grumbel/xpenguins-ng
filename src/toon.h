@@ -169,6 +169,7 @@ extern char toon_debug;
 /* Optional: return non-zero to request app exit (e.g. tray click) */
 extern int (*toon_event_hook)(XEvent *event);
 extern char toon_exit_requested;
+extern char toon_theme_cycle_requested;
 extern Window toon_squish_window;
 
 /*** FUNCTION PROTOTYPES ***/

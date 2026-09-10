@@ -30,8 +30,9 @@ xpenguins-ng --verbose
 man xpenguins-ng
 ```
 
-A **system tray** icon (bomber frame) is shown when a tray is available;
-click it to exit with the usual death animation. Use `--no-tray` to disable it.
+A **system tray** icon (bomber frame) is shown when a tray is available:
+**left-click** exits with the usual death animation; **right-click** cycles
+to the next theme. Use `--no-tray` to disable it.
 
 To make your own theme, read the **THEMES** section of the man page and look
 at the default theme config (usually

@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <stdlib.h>
+#include <string.h>
 #include "xpenguins.h"
 
 /* Random integer between 0 and maxint-1 */
@@ -711,6 +712,114 @@ xpenguins_frame()
   toon_button_x = toon_button_y = -1;
 
   return penguin_number;
+}
+
+
+/* Advance to the next available theme (used by tray right-click). */
+char *
+xpenguins_cycle_theme(XPenguinsTheme *theme)
+{
+  char **names = NULL;
+  int nthemes = 0, i, cur = -1, next, index, imod;
+  char *err;
+  char *current_name = NULL;
+  XPenguinsTheme new_theme;
+
+  if (!theme || !xpenguins_active)
+    return _("No active theme to cycle");
+
+  names = xpenguins_list_themes(&nthemes);
+  if (!names || nthemes < 1) {
+    if (names)
+      xpenguins_free_list(names);
+    return _("No themes available");
+  }
+
+  if (theme->name && theme->ngenera > 0 && theme->name[0])
+    current_name = theme->name[0];
+
+  for (i = 0; i < nthemes; i++) {
+    if (current_name && names[i]) {
+      const char *a = current_name, *b = names[i];
+      int same = 1;
+      while (*a && *b) {
+	char ca = (*a == '_') ? ' ' : *a;
+	char cb = (*b == '_') ? ' ' : *b;
+	if (ca != cb) {
+	  same = 0;
+	  break;
+	}
+	a++;
+	b++;
+      }
+      if (same && !*a && !*b) {
+	cur = i;
+	break;
+      }
+    }
+  }
+  next = (cur < 0) ? 0 : (cur + 1) % nthemes;
+
+  /* Hide current sprites before freeing their pixmaps. */
+  ToonErase(penguin, penguin_number);
+  ToonFlush();
+  ToonFreeData();
+  xpenguins_free_theme(theme);
+
+  memset(&new_theme, 0, sizeof(new_theme));
+  err = xpenguins_load_theme(names[next], &new_theme);
+  if (err) {
+    xpenguins_free_list(names);
+    return err;
+  }
+  *theme = new_theme;
+
+  if (ToonInstallData(penguin_data, penguin_ngenera, PENGUIN_NTYPES) != 0) {
+    xpenguins_free_list(names);
+    return _("Failed to install theme pixmaps");
+  }
+
+  if (!xpenguins_specify_number) {
+    penguin_number = 0;
+    for (i = 0; i < (int) penguin_ngenera; ++i)
+      penguin_number += (int) penguin_numbers[i];
+    if (penguin_number > PENGUIN_MAX)
+      penguin_number = PENGUIN_MAX;
+  }
+
+  index = 0;
+  for (i = 0; i < (int) penguin_ngenera && index < PENGUIN_MAX; ++i)
+    penguin[index++].genus = i;
+  imod = 1;
+  while (index < PENGUIN_MAX) {
+    int gi;
+    for (gi = 0; gi < (int) penguin_ngenera; ++gi) {
+      int j;
+      for (j = 0; j < (int) penguin_numbers[gi] - imod && index < PENGUIN_MAX; ++j)
+	penguin[index++].genus = gi;
+    }
+    imod = 0;
+  }
+
+  for (i = 0; i < penguin_number; i++) {
+    penguin[i].pref_direction = -1;
+    penguin[i].pref_climb = 0;
+    penguin[i].hold = 0;
+    penguin[i].terminating = 0;
+    penguin[i].squished = 0;
+    __xpenguins_init_penguin(penguin + i);
+    penguin[i].x_map = 0;
+    penguin[i].y_map = 0;
+    penguin[i].width_map = 1;
+    penguin[i].height_map = 1;
+    penguin[i].mapped = 0;
+  }
+
+  if (xpenguins_verbose && theme->name && theme->name[0])
+    fprintf(stderr, "[xpenguins-ng] theme: %s\n", theme->name[0]);
+
+  xpenguins_free_list(names);
+  return NULL;
 }
 
 /* Erase all penguins and close the display */

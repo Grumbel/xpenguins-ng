@@ -6,7 +6,7 @@
 /*
  * XEmbed system tray icon.  Default screen visual, ParentRelative
  * background, XShape + GC clip mask, nearest-neighbour scale of the
- * first bomber frame into the panel slot.  Click = graceful exit.
+ * first bomber frame into the panel slot.  Left-click = graceful exit; right-click = next theme.
  */
 
 #include <stdio.h>
@@ -596,7 +596,9 @@ xpenguins_tray_event(XEvent *event)
     break;
   case ButtonRelease:
     if (event->xbutton.button == Button1)
-      return 1;
+      return 1;		/* left: graceful exit */
+    if (event->xbutton.button == Button3)
+      return 2;		/* right: next theme */
     break;
   default:
     break;

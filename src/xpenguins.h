@@ -159,7 +159,10 @@ void xpenguins_set_directory(char *directory);
 /* XDG data dir for user themes (~/.local/share/xpenguins-ng) */
 const char *xpenguins_user_data_dir(void);
 int xpenguins_tray_init(Display *dpy);
-int xpenguins_tray_event(XEvent *event); /* 1 = user requested exit */
+/* Tray event hook: 0=ignore, 1=exit, 2=cycle theme */
+int xpenguins_tray_event(XEvent *event);
+/* Switch to the next installed theme; updates theme and server pixmaps. */
+char *xpenguins_cycle_theme(XPenguinsTheme *theme);
 void xpenguins_tray_poll(void);
 void xpenguins_tray_fini(void);
 

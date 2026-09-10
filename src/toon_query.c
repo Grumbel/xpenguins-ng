@@ -156,8 +156,13 @@ ToonWindowsMoved(void)
 
   while (XPending(toon_display)) {
     XNextEvent(toon_display, &event);
-    if (toon_event_hook && toon_event_hook(&event))
-      toon_exit_requested = 1;
+    if (toon_event_hook) {
+      int hook_r = toon_event_hook(&event);
+      if (hook_r == 1)
+	toon_exit_requested = 1;
+      else if (hook_r == 2)
+	toon_theme_cycle_requested = 1;
+    }
     switch (event.type) {
     case ConfigureNotify:
     case MapNotify:

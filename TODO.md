@@ -254,3 +254,9 @@ and the 32×32 BackgroundPixmap did not match the 22×22 slot.
 - [x] README + man page: default overlay, tray, --verbose, theme paths
   - Fix xpenguins-ng-ng typos in the man page
   - Document that XShape overlay does not need a compositor
+
+### Done (continued)
+
+- [x] Tray right-click cycles through available themes
+  - Button3 -> hook return 2 -> xpenguins_cycle_theme()
+  - Free server pixmaps, load next theme, reinstall, reinit toons

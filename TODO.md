@@ -183,3 +183,11 @@ and the 32×32 BackgroundPixmap did not match the 22×22 slot.
   - Manager must match icon visual per system-tray spec; default works
   - Defer XMapWindow until XEMBED_EMBEDDED_NOTIFY
   - Only set BackgroundPixmap when pixmap size matches window size
+
+### Done (continued)
+
+- [x] Tray icon visible but cropped (32 into 24) with black background
+  - Rebuild icon pixmap to exact ConfigureNotify width×height
+  - ParentRelative background so panel colour shows through
+  - XShape mask from bomber XPM so only the penguin is opaque
+  - Click-to-exit already correct (graceful shutdown)

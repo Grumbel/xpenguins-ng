@@ -4,11 +4,11 @@
  */
 
 /*
- * XEmbed system tray icon.  Uses the tray manager's preferred visual
- * (_NET_SYSTEM_TRAY_VISUAL) when present so XFCE / other panels that
- * advertise an ARGB visual can composite the icon.  Icon is drawn
- * opaque (solid panel-friendly background + first bomber frame) and
- * resized to the slot the panel assigns.  Click = graceful exit.
+ * XEmbed system tray icon.  Default (opaque) screen visual so XFCE and
+ * other panels can embed us without ARGB/XRender.  ParentRelative
+ * background + XShape mask so the panel shows through around the
+ * bomber frame.  Icon is rebuilt to the exact slot size on configure.
+ * Click = graceful exit.
  */
 
 #include <stdio.h>
@@ -18,6 +18,7 @@
 #include <X11/Xatom.h>
 #include <X11/Xutil.h>
 #include <X11/xpm.h>
+#include <X11/extensions/shape.h>
 #include "xpenguins.h"
 
 #ifndef SYSTEM_TRAY_REQUEST_DOCK
@@ -33,30 +34,25 @@
 static Display *tray_dpy;
 static Window tray_win = None;
 static Window tray_owner = None;
-static Pixmap strip_pm = None;   /* full bomber strip (source frames) */
-static Pixmap icon_pm = None;    /* sized opaque square ready to blit */
+static Pixmap strip_pm = None;		/* bomber strip (colour) */
+static Pixmap strip_mask = None;	/* bomber strip (bitmap mask) */
+static Pixmap icon_pm = None;		/* slot-sized pixmap to blit */
+static Pixmap icon_mask = None;		/* slot-sized shape mask */
 static GC tray_gc = None;
 static Visual *tray_visual = NULL;
 static Colormap tray_cmap = None;
 static int tray_depth = 0;
-static int icon_wh = 32;         /* preferred / current icon edge */
-static int strip_w = 0, strip_h = 0;  /* bomber strip geometry */
+static int strip_w = 0, strip_h = 0;
 static int tray_w = 24, tray_h = 24;
+static int icon_w = 24, icon_h = 24;
 static Atom atom_opcode, atom_xembed_info, atom_xembed, atom_manager;
 static Atom atom_selection, atom_tray_visual;
 static char tray_docked;
 static char tray_enabled;
 static char tray_embedded;
+static char tray_have_shape;
 
-/* Prefer the screen default visual for the tray icon.
- *
- * XFCE (and others) may advertise an ARGB _NET_SYSTEM_TRAY_VISUAL.
- * Without XRender we cannot paint that correctly: XFillRectangle /
- * Xpm leave alpha at 0 and the panel composites the icon away.
- * The system-tray spec requires the embedder to match the *icon*
- * visual, so a default-depth (opaque) icon is still docked correctly
- * and stays visible.  Log the manager visual when verbose for
- * diagnostics. */
+/* Prefer the screen default visual (see previous commits for ARGB notes). */
 static void
 __tray_pick_visual(int screen)
 {
@@ -92,230 +88,159 @@ __tray_pick_visual(int screen)
     if (visinfo && nvis > 0) {
       fprintf(stderr,
 	      "[xpenguins-ng] tray: manager offers visual 0x%lx depth %d "
-	      "(using default depth %d instead; no XRender)\n",
+	      "(using default depth %d; ParentRelative + XShape)\n",
 	      (unsigned long) vid, visinfo[0].depth, tray_depth);
       XFree(visinfo);
     } else {
-      fprintf(stderr,
-	      "[xpenguins-ng] tray: manager offers visual 0x%lx "
-	      "(using default depth %d)\n",
-	      (unsigned long) vid, tray_depth);
       if (visinfo)
 	XFree(visinfo);
     }
   }
 }
 
-
-/* Force every pixel of a depth-32 TrueColor pixmap to full opacity.
- * XAllocNamedColor / Xpm on ARGB visuals often leave alpha=0, so the
- * tray compositor blends the icon away completely. */
+/* Load bomber strip once (colour + 1-bit mask). */
 static void
-__tray_force_opaque(Pixmap pm, int w, int h)
-{
-  XImage *img;
-  int x, y;
-  unsigned long alpha_mask, rgb_mask;
-
-  if (tray_depth != 32 || tray_visual->class != TrueColor || pm == None)
-    return;
-
-  rgb_mask = tray_visual->red_mask | tray_visual->green_mask
-    | tray_visual->blue_mask;
-  alpha_mask = (~rgb_mask) & 0xffffffffUL;
-  if (alpha_mask == 0)
-    return;
-
-  img = XGetImage(tray_dpy, pm, 0, 0, (unsigned) w, (unsigned) h,
-		  AllPlanes, ZPixmap);
-  if (!img)
-    return;
-
-  for (y = 0; y < h; y++) {
-    for (x = 0; x < w; x++) {
-      unsigned long px = XGetPixel(img, x, y);
-      XPutPixel(img, x, y, (px & rgb_mask) | alpha_mask);
-    }
-  }
-  XPutImage(tray_dpy, pm, tray_gc, img, 0, 0, 0, 0,
-	    (unsigned) w, (unsigned) h);
-  XDestroyImage(img);
-}
-
-/* Opaque TrueColor pixel for the given 8-bit RGB on the tray visual. */
-static unsigned long
-__tray_rgb_pixel(unsigned r, unsigned g, unsigned b)
-{
-  unsigned long px = 0;
-  unsigned long rm = tray_visual->red_mask;
-  unsigned long gm = tray_visual->green_mask;
-  unsigned long bm = tray_visual->blue_mask;
-  unsigned long am;
-  int shift;
-
-  if (tray_visual->class != TrueColor)
-    return BlackPixel(tray_dpy, DefaultScreen(tray_dpy));
-
-  /* Place 8-bit channel into the high bits of each mask. */
-  for (shift = 31; shift >= 0 && !((rm >> shift) & 1); shift--)
-    ;
-  if (shift >= 7)
-    px |= ((unsigned long) (r & 0xff) << (shift - 7)) & rm;
-  for (shift = 31; shift >= 0 && !((gm >> shift) & 1); shift--)
-    ;
-  if (shift >= 7)
-    px |= ((unsigned long) (g & 0xff) << (shift - 7)) & gm;
-  for (shift = 31; shift >= 0 && !((bm >> shift) & 1); shift--)
-    ;
-  if (shift >= 7)
-    px |= ((unsigned long) (b & 0xff) << (shift - 7)) & bm;
-
-  am = (~(rm | gm | bm)) & 0xffffffffUL;
-  if (tray_depth == 32 && am)
-    px |= am;			/* full opacity */
-  return px;
-}
-
-/* Build / rebuild opaque icon pixmap at the requested edge length. */
-static int
-__tray_build_icon(int edge)
+__tray_load_strip(void)
 {
   char path[512];
   XpmAttributes xa;
-  int screen = DefaultScreen(tray_dpy);
-  unsigned long bg, fg;
-  XColor col, exact;
-  int src_edge;
 
-  if (edge < 16)
-    edge = 16;
-  if (edge > 64)
-    edge = 64;
-  icon_wh = edge;
+  if (strip_pm != None)
+    return;
 
-  /* Distinct opaque background so the slot is never empty-looking.
-   * On ARGB (depth 32) visuals, XAllocNamedColor leaves alpha=0 and the
-   * panel composites the icon away; build pixels with full opacity. */
-  if (tray_depth == 32 && tray_visual->class == TrueColor) {
-    bg = __tray_rgb_pixel(0x5B, 0x9B, 0xD5);
-    fg = __tray_rgb_pixel(0x00, 0x00, 0x00);
-  } else if (XAllocNamedColor(tray_dpy, tray_cmap, "#5B9BD5", &col, &exact)) {
-    bg = col.pixel;
-    fg = BlackPixel(tray_dpy, screen);
-  } else {
-    bg = WhitePixel(tray_dpy, screen);
-    fg = BlackPixel(tray_dpy, screen);
+  snprintf(path, sizeof(path), "%s/themes/Penguins/bomber.xpm",
+	   xpenguins_directory);
+  memset(&xa, 0, sizeof(xa));
+  xa.valuemask = XpmSize | XpmVisual | XpmColormap | XpmDepth;
+  xa.visual = tray_visual;
+  xa.colormap = tray_cmap;
+  xa.depth = tray_depth;
+
+  if (XpmReadFileToPixmap(tray_dpy, tray_win, path, &strip_pm, &strip_mask,
+			  &xa) != XpmSuccess) {
+    strip_pm = None;
+    strip_mask = None;
+    strip_w = strip_h = 0;
+    if (xpenguins_verbose)
+      fprintf(stderr, "[xpenguins-ng] tray: failed to load %s\n", path);
+    return;
   }
+  strip_w = (int) xa.width;
+  strip_h = (int) xa.height;
+  if (xpenguins_verbose)
+    fprintf(stderr, "[xpenguins-ng] tray: bomber strip %dx%d%s\n",
+	    strip_w, strip_h, strip_mask != None ? " (with mask)" : "");
+}
 
-  if (strip_pm == None) {
-    snprintf(path, sizeof(path), "%s/themes/Penguins/bomber.xpm",
-	     xpenguins_directory);
-    memset(&xa, 0, sizeof(xa));
-    xa.valuemask = XpmSize | XpmVisual | XpmColormap | XpmDepth;
-    xa.visual = tray_visual;
-    xa.colormap = tray_cmap;
-    xa.depth = tray_depth;
+/* Build slot-sized colour pixmap + matching 1-bit shape mask. */
+static int
+__tray_build_icon(int width, int height)
+{
+  int frame, dx, dy, copy_w, copy_h;
+  GC mask_gc;
 
-    if (XpmReadFileToPixmap(tray_dpy, tray_win, path, &strip_pm, NULL, &xa)
-	!= XpmSuccess) {
-      strip_pm = None;
-      strip_w = strip_h = 0;
-      if (xpenguins_verbose)
-	fprintf(stderr, "[xpenguins-ng] tray: failed to load %s\n", path);
-    } else {
-      strip_w = (int) xa.width;
-      strip_h = (int) xa.height;
-      if (xpenguins_verbose)
-	fprintf(stderr,
-		"[xpenguins-ng] tray: bomber strip %dx%d\n",
-		strip_w, strip_h);
-    }
-  }
+  if (width < 1)
+    width = 16;
+  if (height < 1)
+    height = 16;
+  icon_w = width;
+  icon_h = height;
+
+  __tray_load_strip();
 
   if (icon_pm != None) {
     XFreePixmap(tray_dpy, icon_pm);
     icon_pm = None;
   }
-  icon_pm = XCreatePixmap(tray_dpy, tray_win, (unsigned) icon_wh,
-			  (unsigned) icon_wh, (unsigned) tray_depth);
+  if (icon_mask != None) {
+    XFreePixmap(tray_dpy, icon_mask);
+    icon_mask = None;
+  }
+
+  icon_pm = XCreatePixmap(tray_dpy, tray_win, (unsigned) icon_w,
+			  (unsigned) icon_h, (unsigned) tray_depth);
   if (tray_gc == None)
     tray_gc = XCreateGC(tray_dpy, tray_win, 0, NULL);
 
-  XSetForeground(tray_dpy, tray_gc, bg);
+  /* Fill under the sprite; shape mask hides outside the bomber frame. */
+  XSetForeground(tray_dpy, tray_gc,
+		 BlackPixel(tray_dpy, DefaultScreen(tray_dpy)));
   XFillRectangle(tray_dpy, icon_pm, tray_gc, 0, 0,
-		 (unsigned) icon_wh, (unsigned) icon_wh);
-  XSetForeground(tray_dpy, tray_gc, fg);
-  XDrawRectangle(tray_dpy, icon_pm, tray_gc, 0, 0,
-		 (unsigned) (icon_wh - 1), (unsigned) (icon_wh - 1));
+		 (unsigned) icon_w, (unsigned) icon_h);
+
+  frame = (strip_h > 0) ? strip_h : 24;
+  copy_w = frame < icon_w ? frame : icon_w;
+  copy_h = frame < icon_h ? frame : icon_h;
+  dx = (icon_w - copy_w) / 2;
+  dy = (icon_h - copy_h) / 2;
 
   if (strip_pm != None && strip_h > 0) {
-    /* First time we have a strip on a 32-bit visual, force its alpha so
-     * subsequent copies are opaque. */
-    static char strip_forced;
-    if (tray_depth == 32 && !strip_forced && strip_w > 0 && strip_h > 0) {
-      __tray_force_opaque(strip_pm, strip_w, strip_h);
-      strip_forced = 1;
-    }
-    src_edge = strip_h;
-    if (src_edge > icon_wh)
-      src_edge = icon_wh;
     XCopyArea(tray_dpy, strip_pm, icon_pm, tray_gc,
-	      0, 0, (unsigned) src_edge, (unsigned) src_edge, 0, 0);
+	      0, 0, (unsigned) copy_w, (unsigned) copy_h, dx, dy);
   } else {
-    XDrawLine(tray_dpy, icon_pm, tray_gc, 3, 3, icon_wh - 4, icon_wh - 4);
-    XDrawLine(tray_dpy, icon_pm, tray_gc, icon_wh - 4, 3, 3, icon_wh - 4);
+    XSetForeground(tray_dpy, tray_gc,
+		   WhitePixel(tray_dpy, DefaultScreen(tray_dpy)));
+    XDrawLine(tray_dpy, icon_pm, tray_gc, 3, 3, icon_w - 4, icon_h - 4);
+    XDrawLine(tray_dpy, icon_pm, tray_gc, icon_w - 4, 3, 3, icon_h - 4);
   }
 
-  /* Guarantee the final icon pixmap is fully opaque under ARGB trays. */
-  __tray_force_opaque(icon_pm, icon_wh, icon_wh);
+  /* 1-bit mask: empty, then copy first-frame mask centred. */
+  icon_mask = XCreatePixmap(tray_dpy, tray_win, (unsigned) icon_w,
+			    (unsigned) icon_h, 1);
+  mask_gc = XCreateGC(tray_dpy, icon_mask, 0, NULL);
+  XSetForeground(tray_dpy, mask_gc, 0);
+  XFillRectangle(tray_dpy, icon_mask, mask_gc, 0, 0,
+		 (unsigned) icon_w, (unsigned) icon_h);
+  if (strip_mask != None && strip_h > 0) {
+    XCopyArea(tray_dpy, strip_mask, icon_mask, mask_gc,
+	      0, 0, (unsigned) copy_w, (unsigned) copy_h, dx, dy);
+  } else {
+    XSetForeground(tray_dpy, mask_gc, 1);
+    XFillRectangle(tray_dpy, icon_mask, mask_gc, 0, 0,
+		   (unsigned) icon_w, (unsigned) icon_h);
+  }
+  XFreeGC(tray_dpy, mask_gc);
   return 0;
+}
+
+static void
+__tray_apply_shape(void)
+{
+  if (!tray_have_shape || tray_win == None || icon_mask == None)
+    return;
+  XShapeCombineMask(tray_dpy, tray_win, ShapeBounding, 0, 0, icon_mask,
+		    ShapeSet);
 }
 
 static void
 __tray_paint(void)
 {
-  int x, y, side;
+  int x, y, side_w, side_h;
 
-  if (!tray_dpy || tray_win == None || icon_pm == None || tray_gc == None)
+  if (!tray_dpy || tray_win == None)
     return;
 
-  side = icon_wh;
-  if (tray_w > 0 && tray_h > 0) {
-    /* If the panel resized us, rebuild the icon at the new edge. */
-    int want = tray_w < tray_h ? tray_w : tray_h;
-    if (want != icon_wh && want >= 16)
-      __tray_build_icon(want);
-    side = icon_wh;
-  }
+  if (tray_w > 0 && tray_h > 0
+      && (tray_w != icon_w || tray_h != icon_h))
+    __tray_build_icon(tray_w, tray_h);
+  else if (icon_pm == None)
+    __tray_build_icon(tray_w > 0 ? tray_w : 24, tray_h > 0 ? tray_h : 24);
 
-  /* Fill the whole slot, then centre the square icon.
-   * BlackPixel on a 32-bit visual is transparent; use opaque black. */
-  {
-    unsigned long fill = (tray_depth == 32 && tray_visual->class == TrueColor)
-      ? __tray_rgb_pixel(0, 0, 0)
-      : BlackPixel(tray_dpy, DefaultScreen(tray_dpy));
-    XSetForeground(tray_dpy, tray_gc, fill);
-    XFillRectangle(tray_dpy, tray_win, tray_gc, 0, 0,
-		   (unsigned) (tray_w > 0 ? tray_w : side),
-		   (unsigned) (tray_h > 0 ? tray_h : side));
-  }
+  if (icon_pm == None || tray_gc == None)
+    return;
 
-  x = (tray_w > side) ? (tray_w - side) / 2 : 0;
-  y = (tray_h > side) ? (tray_h - side) / 2 : 0;
-  XCopyArea(tray_dpy, icon_pm, tray_win, tray_gc,
-	    0, 0, (unsigned) side, (unsigned) side, x, y);
+  side_w = icon_w;
+  side_h = icon_h;
+  x = (tray_w > side_w) ? (tray_w - side_w) / 2 : 0;
+  y = (tray_h > side_h) ? (tray_h - side_h) / 2 : 0;
 
-  /* BackgroundPixmap keeps the icon visible when Expose is sparse.
-   * Only attach it when sizes match; a mismatched pixmap is undefined
-   * on some servers and XFCE can leave the slot blank. */
-  if (tray_w == side && tray_h == side)
-    XSetWindowBackgroundPixmap(tray_dpy, tray_win, icon_pm);
-  else
-    XSetWindowBackgroundPixmap(tray_dpy, tray_win, None);
+  /* ParentRelative: panel colour shows through where the shape is empty. */
+  XSetWindowBackgroundPixmap(tray_dpy, tray_win, ParentRelative);
   XClearWindow(tray_dpy, tray_win);
-  /* Clear wiped the copy; paint again on top of the background. */
+
   XCopyArea(tray_dpy, icon_pm, tray_win, tray_gc,
-	    0, 0, (unsigned) side, (unsigned) side, x, y);
+	    0, 0, (unsigned) side_w, (unsigned) side_h, x, y);
+  __tray_apply_shape();
   XFlush(tray_dpy);
 }
 
@@ -323,7 +248,7 @@ static void
 __tray_set_xembed_info(void)
 {
   unsigned long info[2];
-  info[0] = 0;			/* XEMBED version */
+  info[0] = 0;
   info[1] = XEMBED_MAPPED;
   XChangeProperty(tray_dpy, tray_win, atom_xembed_info, atom_xembed_info,
 		  32, PropModeReplace, (unsigned char *) info, 2);
@@ -341,10 +266,9 @@ __tray_send_dock(void)
   memset(&hints, 0, sizeof(hints));
   hints.flags = PMinSize | PBaseSize | PWinGravity;
   hints.min_width = hints.min_height = 16;
-  hints.base_width = hints.base_height = icon_wh;
+  hints.base_width = hints.base_height = 24;
   hints.win_gravity = StaticGravity;
   XSetWMNormalHints(tray_dpy, tray_win, &hints);
-  XResizeWindow(tray_dpy, tray_win, (unsigned) icon_wh, (unsigned) icon_wh);
 
   memset(&ev, 0, sizeof(ev));
   ev.xclient.type = ClientMessage;
@@ -358,10 +282,7 @@ __tray_send_dock(void)
   ev.xclient.data.l[2] = (long) tray_win;
   XSendEvent(tray_dpy, tray_owner, False, NoEventMask, &ev);
   XSync(tray_dpy, False);
-  /* Leave unmapped until XEMBED_EMBEDDED_NOTIFY / MapNotify from the
-   * tray.  Early MapWindow caused XFCE to place us at a transient
-   * geometry then unmap, and the second map sometimes left a blank
-   * slot.  XEMBED_MAPPED in _XEMBED_INFO tells the manager to map us. */
+  /* Leave unmapped until XEMBED_EMBEDDED_NOTIFY. */
   tray_docked = 1;
   return 0;
 }
@@ -376,7 +297,7 @@ __tray_find_owner(void)
 int
 xpenguins_tray_init(Display *dpy)
 {
-  int screen;
+  int screen, shape_event, shape_error;
   char selname[64];
   XSetWindowAttributes swa;
   XClassHint classhint;
@@ -388,6 +309,8 @@ xpenguins_tray_init(Display *dpy)
   tray_docked = 0;
   tray_embedded = 0;
   screen = DefaultScreen(dpy);
+  tray_have_shape = XShapeQueryExtension(dpy, &shape_event, &shape_error)
+    ? 1 : 0;
 
   snprintf(selname, sizeof(selname), "_NET_SYSTEM_TRAY_S%d", screen);
   atom_selection = XInternAtom(dpy, selname, False);
@@ -405,19 +328,13 @@ xpenguins_tray_init(Display *dpy)
     tray_cmap = DefaultColormap(dpy, screen);
   }
 
-  /* On ARGB visuals WhitePixel/BlackPixel are transparent (alpha 0). */
-  if (tray_depth == 32 && tray_visual->class == TrueColor) {
-    swa.background_pixel = __tray_rgb_pixel(0x5B, 0x9B, 0xD5);
-    swa.border_pixel = __tray_rgb_pixel(0, 0, 0);
-  } else {
-    swa.background_pixel = WhitePixel(dpy, screen);
-    swa.border_pixel = BlackPixel(dpy, screen);
-  }
+  swa.background_pixmap = ParentRelative;
+  swa.border_pixel = BlackPixel(dpy, screen);
   swa.colormap = tray_cmap;
   swa.bit_gravity = StaticGravity;
   swa.event_mask = ExposureMask | ButtonPressMask | ButtonReleaseMask
     | StructureNotifyMask | PropertyChangeMask;
-  valuemask = CWBackPixel | CWBorderPixel | CWColormap
+  valuemask = CWBackPixmap | CWBorderPixel | CWColormap
     | CWEventMask | CWBitGravity;
 
   tray_win = XCreateWindow(dpy, RootWindow(dpy, screen),
@@ -433,16 +350,16 @@ xpenguins_tray_init(Display *dpy)
   XStoreName(dpy, tray_win, title);
 
   __tray_set_xembed_info();
-  __tray_build_icon(32);
+  __tray_build_icon(24, 24);
 
   if (tray_owner != None) {
     __tray_send_dock();
     if (xpenguins_verbose)
       fprintf(stderr,
-	      "[xpenguins-ng] tray: docked on 0x%lx, win 0x%lx, icon %dx%d "
-	      "(opaque blue bg; click to exit)\n",
+	      "[xpenguins-ng] tray: docked on 0x%lx, win 0x%lx, "
+	      "icon %dx%d (ParentRelative + shape; click to exit)\n",
 	      (unsigned long) tray_owner, (unsigned long) tray_win,
-	      icon_wh, icon_wh);
+	      icon_w, icon_h);
   } else if (xpenguins_verbose) {
     fprintf(stderr, "[xpenguins-ng] tray: no manager for %s yet\n", selname);
   }
@@ -461,7 +378,6 @@ xpenguins_tray_event(XEvent *event)
     tray_owner = (Window) event->xclient.data.l[2];
     if (tray_owner != None) {
       tray_docked = 0;
-      /* Visual may only be known after the manager appears. */
       __tray_pick_visual(DefaultScreen(tray_dpy));
       __tray_set_xembed_info();
       __tray_send_dock();
@@ -535,7 +451,7 @@ xpenguins_tray_poll(void)
     __tray_set_xembed_info();
     __tray_send_dock();
   }
-  if (tray_docked)
+  if (tray_docked && tray_embedded)
     __tray_paint();
 }
 
@@ -548,15 +464,16 @@ xpenguins_tray_fini(void)
     XFreeGC(tray_dpy, tray_gc);
   if (icon_pm != None)
     XFreePixmap(tray_dpy, icon_pm);
+  if (icon_mask != None)
+    XFreePixmap(tray_dpy, icon_mask);
   if (strip_pm != None)
     XFreePixmap(tray_dpy, strip_pm);
+  if (strip_mask != None)
+    XFreePixmap(tray_dpy, strip_mask);
   if (tray_win != None)
     XDestroyWindow(tray_dpy, tray_win);
-  if (tray_cmap != None
-      && tray_cmap != DefaultColormap(tray_dpy, DefaultScreen(tray_dpy)))
-    XFreeColormap(tray_dpy, tray_cmap);
   tray_gc = None;
-  icon_pm = strip_pm = None;
+  icon_pm = icon_mask = strip_pm = strip_mask = None;
   tray_win = tray_owner = None;
   tray_visual = NULL;
   tray_cmap = None;

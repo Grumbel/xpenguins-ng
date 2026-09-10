@@ -33,7 +33,7 @@
 #include <X11/xpm.h>
 
 char *xpenguins_directory = XPENGUINS_SYSTEM_DIRECTORY;
-char xpenguins_verbose = 1;
+char xpenguins_verbose = 0;
 
 const char *
 xpenguins_user_data_dir(void)

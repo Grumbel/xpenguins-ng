@@ -236,3 +236,9 @@ and the 32×32 BackgroundPixmap did not match the 22×22 slot.
   - ParentRelative clear is unreliable after XEmbed reparent on XFCE
   - Clear slot by XCopyArea from the parent panel under our position
   - Then clip-blit only opaque penguin pixels; apply XShape after
+
+### Done (continued)
+
+- [x] Gate `[xpenguins-ng] tray:` diagnostics on `--verbose`
+  - `xpenguins_verbose` default was 1 so tray logs always appeared
+  - Default is now 0; enable with `--verbose` (still disable with `-q`)

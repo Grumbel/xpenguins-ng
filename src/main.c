@@ -433,6 +433,7 @@ ShowUsage(char **argv)
    printf(_("  -n, --penguins       <n>          Create <n> penguins (max %d)\n"),
 	  PENGUIN_MAX);
    printf(_("  -q, --quiet                       Suppress all non-fatal messages\n"
+	    "      --verbose                     Enable diagnostic messages (tray, mode, ...)\n"
 	    "  -v, --version                     Show version information\n"
 	    "  -h, --help                        Show this message\n"
 	    "  -c, --config-dir     <dir>        Look for config files (and themes) in <dir>\n"
@@ -444,7 +445,8 @@ ShowUsage(char **argv)
 	    "  -b, --no-blood                    Do not show any gory images\n"
 	    "  -a, --no-angels                   Do not show any cherubim\n"
 	    "  -s, --squish                      kill penguins with mouse\n"
-	    "      --debug                        window-map / spawn diagnostics\n"	    "      --no-tray                      do not show a system tray icon\n"
+	    "      --debug                       window-map / spawn diagnostics\n"
+	    "      --no-tray                     do not show a system tray icon\n"
 	    "      --overlay                     force transparent overlay (compositor)\n"
 	    "      --no-overlay, --root          force classic root-window drawing\n"
 	    "      --all                         Run all available themes simultaneously\n"

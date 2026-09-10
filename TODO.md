@@ -145,3 +145,25 @@ Current dual-path:
   https://www.ratrabbit.nl/ratrabbit/software/xpenguins
 - xsnow / compositor-friendly approaches: transparent fullscreen
   override-redirect window with empty input shape
+
+### Done (continued)
+
+- [x] System tray icon visibility under XFCE
+  - Honour `_NET_SYSTEM_TRAY_VISUAL` (ARGB panels) when creating the
+    tray window and its colormap
+  - Rebuild the opaque bomber icon at the size the panel configures
+    (typically 22×22) instead of a fixed 32×32 pixmap
+  - Keep BackgroundPixmap + explicit paint on map/reparent/configure/
+    embed so Expose-sparse trays still show the icon
+  - Log manager visual when verbose
+
+## Notes (tray)
+
+Log sequence that previously produced an invisible slot:
+
+  docked → configure 32x32 → reparent → map → unmap → reparent →
+  XEMBED_EMBEDDED_NOTIFY → configure 22x22 → mapped
+
+Docking and XEmbed worked; the icon was blank because the window was
+on the default visual while the panel expected its advertised visual,
+and the 32×32 BackgroundPixmap did not match the 22×22 slot.

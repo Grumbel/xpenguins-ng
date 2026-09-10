@@ -363,6 +363,11 @@ main (int argc, char **argv)
       fprintf(stderr, ".");
     }
     if (toon_exit_requested || ToonSignal()) {
+      /* Edge-trigger: tray click latches toon_exit_requested; clear it
+       * so the next frames are not treated as a second interrupt
+       * (which would abort the death animation early).  Same pattern
+       * as ToonSignal() clearing toon_signal. */
+      toon_exit_requested = 0;
       if (++interupts > 1) {
 	break;
       }

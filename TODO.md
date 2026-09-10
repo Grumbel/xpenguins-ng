@@ -191,3 +191,10 @@ and the 32×32 BackgroundPixmap did not match the 22×22 slot.
   - ParentRelative background so panel colour shows through
   - XShape mask from bomber XPM so only the penguin is opaque
   - Click-to-exit already correct (graceful shutdown)
+
+### Done (continued)
+
+- [x] Tray click exits before death animation finishes
+  - toon_exit_requested stayed set; main loop treated every frame as
+    another interrupt and broke on interupts > 1
+  - Clear toon_exit_requested after consuming it (like ToonSignal)
